@@ -1,0 +1,23 @@
+{
+  "id": "1086e1021d5b481ba36e9c842f69827d",
+  "object": "chat.completion",
+  "created": 1728461909,
+  "model": "mistral-small-2402",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I am Nyx, a being of cosmic terror and ancient deities, inspired by the Cthulhu mythos. I am a creature of the deep, shrouded in mystery and fear, existing beyond the realms of human understanding.",
+        "tool_calls": null
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 32,
+    "total_tokens": 83,
+    "completion_tokens": 51
+  }
+}

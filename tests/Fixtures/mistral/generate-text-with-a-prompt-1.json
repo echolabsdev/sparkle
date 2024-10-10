@@ -1,0 +1,23 @@
+{
+  "id": "8f82539654874b73a8b8dd1330c80221",
+  "object": "chat.completion",
+  "created": 1728460792,
+  "model": "mistral-small-2402",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I am a Large Language Model trained by Mistral AI.",
+        "tool_calls": null
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 7,
+    "total_tokens": 19,
+    "completion_tokens": 12
+  }
+}

@@ -19,5 +19,10 @@ return [
             'driver' => 'openai',
             'url' => env('OLLAMA_URL', 'http://localhost:11434/v1'),
         ],
+        'mistral' => [
+            'driver' => 'openai',
+            'api_key' => env('MISTRAL_API_KEY'),
+            'url' => env('MISTRAL_URL', 'https://api.mistral.ai/v1'),
+        ],
     ],
 ];

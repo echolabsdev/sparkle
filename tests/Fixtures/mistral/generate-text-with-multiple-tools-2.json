@@ -1,0 +1,21 @@
+{
+  "id": "34274d5a669a432bace0db9c3b359ba7",
+  "object": "chat.completion",
+  "created": 1728462827,
+  "model": "mistral-large-latest",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The tigers game is at 3pm in Detroit. The weather will be 75° and sunny. You should not wear a coat"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 302,
+    "total_tokens": 333,
+    "completion_tokens": 31
+  }
+}

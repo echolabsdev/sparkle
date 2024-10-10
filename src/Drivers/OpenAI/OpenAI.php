@@ -72,7 +72,7 @@ class OpenAI implements Driver
             id: data_get($toolCall, 'id'),
             name: data_get($toolCall, 'function.name'),
             arguments: data_get($toolCall, 'function.arguments'),
-        ), data_get($data, 'choices.0.message.tool_calls', []));
+        ), data_get($data, 'choices.0.message.tool_calls', []) ?? []);
 
         return new DriverResponse(
             text: data_get($data, 'choices.0.message.content') ?? '',
