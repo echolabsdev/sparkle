@@ -51,8 +51,9 @@ class PrismManager
     protected function createOpenaiDriver(array $config): OpenAI
     {
         return new OpenAI(
-            $config['api_key'] ?? '',
-            $config['url'],
+            apiKey: $config['api_key'] ?? '',
+            url: $config['url'],
+            organization: $config['organization'] ?? null,
         );
     }
 

@@ -22,10 +22,12 @@ class OpenAI implements Driver
     public function __construct(
         public readonly string $apiKey,
         public readonly string $url,
+        public readonly ?string $organization,
     ) {
         $this->client = new Client(
-            $this->apiKey,
-            $this->url,
+            apiKey: $this->apiKey,
+            url: $this->url,
+            organization: $this->organization,
         );
     }
 
