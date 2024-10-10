@@ -15,6 +15,11 @@ return [
             'api_key' => env('ANTHROPIC_API_KEY'),
             'version' => env('ANTHROPIC_API_VERSION', '2023-06-01'),
         ],
+        'google' => [
+            'driver' => 'google',
+            'base_url' => env('GOOGLE_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+            'api_key' => env('GOOGLE_API_KEY'),
+        ],
         'ollama' => [
             'driver' => 'openai',
             'url' => env('OLLAMA_URL', 'http://localhost:11434/v1'),

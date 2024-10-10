@@ -1,0 +1,39 @@
+{
+    "candidates": [
+        {
+            "content": {
+                "parts": [
+                    {
+                        "text": "I am an AI, so I don't have feelings like humans do. However, I'm here and ready to assist you with any questions or tasks you may have! How can I help you today? \n"
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "STOP",
+            "index": 0,
+            "safetyRatings": [
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "probability": "NEGLIGIBLE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "probability": "NEGLIGIBLE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "probability": "NEGLIGIBLE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "probability": "NEGLIGIBLE"
+                }
+            ]
+        }
+    ],
+    "usageMetadata": {
+        "promptTokenCount": 6,
+        "candidatesTokenCount": 43,
+        "totalTokenCount": 49
+    }
+}
