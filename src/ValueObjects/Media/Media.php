@@ -171,9 +171,31 @@ class Media implements Arrayable
         return $this->url !== null;
     }
 
+    /**
+     * Are the bytes ALREADY IN HAND?
+     *
+     * This used to delegate to `hasRawContent()`, which answers a different
+     * question — "can bytes be obtained" — and therefore returned true for a
+     * URL that had never been fetched:
+     *
+     *     Audio::fromUrl('http://169.254.169.254/…')->hasBase64();  // was true
+     *
+     * The name states a fact about this object's contents, so it is the natural
+     * predicate for a consumer deciding whether sending this media will cause
+     * an outbound request. Every such consumer got the opposite of what they
+     * asked, silently: the guard passed, the request was built, the fetch
+     * happened. A downstream SSRF guard written this way does nothing at all.
+     *
+     * `fromLocalPath()` and `fromStoragePath()` still answer TRUE, and that is
+     * correct rather than an exception — both read the file at construction, so
+     * by the time anyone asks, the bytes really are held here.
+     *
+     * Ask `hasRawContent()` when you meant "can this be resolved". Both ports
+     * already spell this the strict way; the reference was the odd one out.
+     */
     public function hasBase64(): bool
     {
-        return $this->hasRawContent();
+        return $this->base64 !== null || $this->rawContent !== null;
     }
 
     public function hasMimeType(): bool
