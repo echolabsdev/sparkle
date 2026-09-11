@@ -21,6 +21,7 @@ use Prism\Prism\Text\Request;
 use Prism\Prism\Text\Response;
 use Prism\Prism\Text\ResponseBuilder;
 use Prism\Prism\Text\Step;
+use Prism\Prism\ValueObjects\GeneratedImage;
 use Prism\Prism\ValueObjects\MessagePartWithCitations;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
 use Prism\Prism\ValueObjects\Messages\ToolResultMessage;
@@ -200,6 +201,53 @@ class Text
                     ->flatMap(fn (array $output): array => Arr::pluck($output['summary'] ?? [], 'text'))
                     ->filter()
                     ->toArray(),
+                // A HOSTED IMAGE TOOL'S OUTPUT HAD NOWHERE TO GO. Every other
+                // hosted tool above hands its result back here, and a turn that
+                // generated an image got the bytes only inside `raw` — which is
+                // the untyped escape hatch, not a surface. The asymmetry was the
+                // gap, not the request parameters.
+                //
+                // The `result` is base64 with no data: prefix, so it is wrapped
+                // in the same GeneratedImage the images endpoint returns. A
+                // caller should not have to know which of the two produced it.
+                'generatedImages' => collect($output)
+                    ->filter(fn (array $item): bool => ($item['type'] ?? null) === 'image_generation_call')
+                    ->map(fn (array $item): ?GeneratedImage => is_string($item['result'] ?? null) && $item['result'] !== ''
+                        ? new GeneratedImage(
+                            base64: $item['result'],
+                            // The provider rewrites the prompt and returns what
+                            // it actually drew from. GeneratedImage already has
+                            // the field, so a caller comparing the two does not
+                            // have to cross-reference a second array.
+                            revisedPrompt: is_string($item['revised_prompt'] ?? null) ? $item['revised_prompt'] : null,
+                        )
+                        : null)
+                    ->filter()
+                    ->values()
+                    // ->all(), NOT ->toArray(). Collection::toArray() converts
+                    // every Arrayable item it holds, and GeneratedImage is one
+                    // (Media implements Arrayable) — so toArray() here silently
+                    // handed back plain arrays and the typed value object never
+                    // reached the caller. Nothing else in this block returns
+                    // objects, which is why the difference has not bitten before.
+                    ->all() ?: null,
+                // Kept separate from the images themselves because it is the
+                // part a caller reconciles against what it asked for — a
+                // provider that silently served a different size or quality is
+                // only visible here.
+                'imageGenerationCalls' => collect($output)
+                    ->filter(fn (array $item): bool => ($item['type'] ?? null) === 'image_generation_call')
+                    ->map(fn (array $item): array => Arr::whereNotNull([
+                        'id' => $item['id'] ?? null,
+                        'status' => $item['status'] ?? null,
+                        'revised_prompt' => $item['revised_prompt'] ?? null,
+                        'size' => $item['size'] ?? null,
+                        'quality' => $item['quality'] ?? null,
+                        'background' => $item['background'] ?? null,
+                        'output_format' => $item['output_format'] ?? null,
+                    ]))
+                    ->values()
+                    ->toArray() ?: null,
             ]),
             raw: $data,
             toolApprovalRequests: $toolApprovalRequests,

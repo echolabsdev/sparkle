@@ -13,6 +13,7 @@ use Prism\Prism\Enums\Provider;
 use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Facades\Tool;
+use Prism\Prism\ValueObjects\GeneratedImage;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
 use Prism\Prism\ValueObjects\MessagePartWithCitations;
@@ -639,6 +640,72 @@ it('honors explicit reasoning provider option over withReasoning(false)', functi
 });
 
 describe('provider tool results', function (): void {
+    it('hands back the image a HOSTED image tool generated', function (): void {
+        // The asymmetry this closes: every other hosted tool's output reached
+        // additionalContent, and a turn that generated an image got the bytes
+        // only inside `raw` — the untyped escape hatch, not a surface. So a
+        // caller using the web_search tool was served and a caller using the
+        // image_generation tool was not.
+        FixtureResponse::fakeResponseSequence('v1/responses', 'openai/generate-text-with-image-generation');
+
+        $response = Prism::text()
+            ->using(Provider::OpenAI, 'gpt-5.2')
+            ->withPrompt('Draw me a prism refracting daylight')
+            ->withProviderTools([new ProviderTool(type: 'image_generation', name: 'image_generation')])
+            ->asText();
+
+        $step = $response->steps[0];
+
+        expect($step->additionalContent)->toHaveKey('generatedImages');
+        expect($step->additionalContent['generatedImages'])->toHaveCount(1);
+
+        $image = $step->additionalContent['generatedImages'][0];
+
+        // The SAME value object the images endpoint returns. A caller should not
+        // have to know which of the two produced it.
+        expect($image)->toBeInstanceOf(GeneratedImage::class)
+            ->and($image->base64)->toBe('aVdBTUEAALGPC/xhBQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+QA')
+            ->and($image->hasRevisedPrompt())->toBeTrue()
+            ->and($image->revisedPrompt)->toContain('photorealistic prism');
+    });
+
+    it('reports what the provider ACTUALLY drew, not what was asked for', function (): void {
+        // Kept separate from the image because this is the part a caller
+        // reconciles against its request: a provider that silently served a
+        // different size or quality is visible only here.
+        FixtureResponse::fakeResponseSequence('v1/responses', 'openai/generate-text-with-image-generation');
+
+        $response = Prism::text()
+            ->using(Provider::OpenAI, 'gpt-5.2')
+            ->withPrompt('Draw me a prism refracting daylight')
+            ->withProviderTools([new ProviderTool(type: 'image_generation', name: 'image_generation')])
+            ->asText();
+
+        $call = $response->steps[0]->additionalContent['imageGenerationCalls'][0];
+
+        expect($call['status'])->toBe('completed')
+            ->and($call['size'])->toBe('1024x1024')
+            ->and($call['quality'])->toBe('high')
+            ->and($call['output_format'])->toBe('png')
+            ->and($call['id'])->toStartWith('ig_');
+    });
+
+    it('adds no image keys to a turn that generated none', function (): void {
+        // The vacuity guard for the two above. Without it a handler that always
+        // emitted an empty array would pass them both, and a caller checking
+        // `toHaveKey('generatedImages')` would branch on every turn.
+        FixtureResponse::fakeResponseSequence('v1/responses', 'openai/generate-text-with-web-search-citations');
+
+        $response = Prism::text()
+            ->using(Provider::OpenAI, 'gpt-4.1-2025-04-14')
+            ->withPrompt('What is the weather going to be like in London today?')
+            ->withProviderTools([new ProviderTool(type: 'web_search_preview', name: 'web_search_preview')])
+            ->asText();
+
+        expect($response->steps[0]->additionalContent)->not->toHaveKey('generatedImages')
+            ->and($response->steps[0]->additionalContent)->not->toHaveKey('imageGenerationCalls');
+    });
+
     it('captures web search provider tool in providerToolCalls', function (): void {
         FixtureResponse::fakeResponseSequence('v1/responses', 'openai/generate-text-with-web-search-citations');
 
