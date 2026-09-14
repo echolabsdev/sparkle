@@ -9,6 +9,8 @@ namespace Prism\Prism\ValueObjects\Media;
  */
 class Document extends Media
 {
+    public const KIND = 'document';
+
     protected ?string $documentTitle = null;
 
     /**

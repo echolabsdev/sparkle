@@ -10,7 +10,10 @@ use Illuminate\Http\Client\RequestException;
 use Prism\Prism\Concerns\InitializesClient;
 use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Exceptions\PrismRateLimitedException;
+use Prism\Prism\Images\Request as ImagesRequest;
+use Prism\Prism\Images\Response as ImagesResponse;
 use Prism\Prism\Providers\Provider;
+use Prism\Prism\Providers\XAI\Handlers\Images;
 use Prism\Prism\Providers\XAI\Handlers\Stream;
 use Prism\Prism\Providers\XAI\Handlers\Structured;
 use Prism\Prism\Providers\XAI\Handlers\Text;
@@ -40,6 +43,17 @@ class XAI extends Provider
     public function stream(TextRequest $request): Generator
     {
         $handler = new Stream($this->client(
+            $request->clientOptions(),
+            $request->clientRetry()
+        ));
+
+        return $handler->handle($request);
+    }
+
+    #[\Override]
+    public function images(ImagesRequest $request): ImagesResponse
+    {
+        $handler = new Images($this->client(
             $request->clientOptions(),
             $request->clientRetry()
         ));

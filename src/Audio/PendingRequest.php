@@ -19,11 +19,11 @@ class PendingRequest
     use ConfiguresProviders;
     use HasProviderOptions;
 
-    protected string|Audio $input;
+    protected string|Audio|int $input;
 
     protected string $voice;
 
-    public function withInput(string|Audio $input): self
+    public function withInput(string|Audio|int $input): self
     {
         $this->input = $input;
 
@@ -59,6 +59,28 @@ class PendingRequest
         }
     }
 
+    public function asTextProviderId(): ProviderIdResponse
+    {
+        $request = $this->toSpeechToTextRequest();
+
+        try {
+            return $this->provider->speechToTextProviderId($request);
+        } catch (RequestException $e) {
+            $this->provider->handleRequestException($request->model(), $e);
+        }
+    }
+
+    public function asTextAsync(): TextResponse
+    {
+        $request = $this->toSpeechToTextAsyncRequest();
+
+        try {
+            return $this->provider->speechToTextAsync($request);
+        } catch (RequestException $e) {
+            $this->provider->handleRequestException($request->model(), $e);
+        }
+    }
+
     public function toTextToSpeechRequest(): TextToSpeechRequest
     {
         if (! is_string($this->input)) {
@@ -83,6 +105,22 @@ class PendingRequest
         }
 
         return new SpeechToTextRequest(
+            model: $this->model,
+            providerKey: $this->providerKey(),
+            input: $this->input,
+            clientOptions: $this->clientOptions,
+            clientRetry: $this->clientRetry,
+            providerOptions: $this->providerOptions,
+        );
+    }
+
+    protected function toSpeechToTextAsyncRequest(): SpeechToTextAsyncRequest
+    {
+        if (! is_string($this->input) && ! is_int($this->input)) {
+            throw new InvalidArgumentException('Async speech-to-text requires the input be the Provider ID as a string or integer');
+        }
+
+        return new SpeechToTextAsyncRequest(
             model: $this->model,
             providerKey: $this->providerKey(),
             input: $this->input,

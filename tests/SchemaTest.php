@@ -163,6 +163,7 @@ it('they can be nullable', function (): void {
                     'active',
                     'inactive',
                     'suspended',
+                    null,
                 ],
                 'type' => ['string', 'null'],
             ],
@@ -218,7 +219,7 @@ it('nullable enums include types', function (): void {
 
     expect($enumSchema->toArray())->toBe([
         'description' => 'sick or fever temp',
-        'enum' => [98.6, 100, 'unknown', 105],
+        'enum' => [98.6, 100, 'unknown', 105, null],
         'type' => [
             'number',
             'string',

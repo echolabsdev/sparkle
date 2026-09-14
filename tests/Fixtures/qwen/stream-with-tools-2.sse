@@ -1,0 +1,35 @@
+id:1
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":""},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":1,"total_tokens":101},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+
+id:2
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"The"},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":2,"total_tokens":102},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+
+id:3
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" current weather in"},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":3,"total_tokens":103},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+
+id:4
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" Detroit is "},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":4,"total_tokens":104},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+
+id:5
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"75°"},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":5,"total_tokens":105},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+
+id:6
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" and sunny."},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":6,"total_tokens":106},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+
+id:7
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":""},"finish_reason":"stop"}]},"usage":{"input_tokens":100,"output_tokens":7,"total_tokens":107},"request_id":"9e33d9e3-0f55-9fc7-9fd2-4a3aa5cf3725"}
+

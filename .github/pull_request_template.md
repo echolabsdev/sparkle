@@ -1,4 +1,4 @@
-<!-- Please review our contributing guidelines https://github.com/prism-php/prism/blob/main/.github/CONTRIBUTING.md -->
+<!-- Please review our contributing guidelines https://github.com/Particle-Academy/prism/blob/main/.github/CONTRIBUTING.md -->
 ## Description
 
 ## Breaking Changes

@@ -53,6 +53,8 @@ class Stream
      */
     public function handle(Request $request): Generator
     {
+        yield from $this->resolveToolApprovalsAndYieldEvents($request, EventID::generate());
+
         $response = $this->sendRequest($request);
 
         yield from $this->processStream($response, $request);
@@ -291,7 +293,17 @@ class Stream
 
         // Execute tools and emit results
         $toolResults = [];
-        yield from $this->callToolsAndYieldEvents($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults);
+        $hasPendingToolCalls = false;
+        yield from $this->callToolsAndYieldEventsWithPending($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults, $hasPendingToolCalls);
+
+        if ($hasPendingToolCalls) {
+            // Client-executed or approval-required tool calls: end the stream
+            // with FinishReason::ToolCalls so the consumer resolves and resumes.
+            $this->state->markStepFinished();
+            yield from $this->yieldToolCallsFinishEvents($this->state);
+
+            return;
+        }
 
         // Emit step finish after tool calls
         $this->state->markStepFinished();
@@ -339,7 +351,9 @@ class Stream
                 'tools' => ToolMap::map($request->tools()),
                 'stream' => true,
                 ...Arr::whereNotNull([
-                    'think' => $request->providerOptions('thinking'),
+                    'think' => $request->providerOptions('thinking') ?? (
+                        $request->reasoningEnabled() === false ? false : null
+                    ),
                     'keep_alive' => $request->providerOptions('keep_alive'),
                 ]),
                 'options' => Arr::whereNotNull(array_merge([

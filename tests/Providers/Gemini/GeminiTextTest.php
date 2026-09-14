@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Http;
 use Prism\Prism\Enums\Citations\CitationSourceType;
 use Prism\Prism\Enums\FinishReason;
 use Prism\Prism\Enums\Provider;
-use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Schema\ArraySchema;
 use Prism\Prism\Schema\BooleanSchema;
@@ -26,6 +25,7 @@ use Prism\Prism\ValueObjects\Messages\SystemMessage;
 use Prism\Prism\ValueObjects\Messages\ToolResultMessage;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\ProviderTool;
+use stdClass;
 use Tests\Fixtures\FixtureResponse;
 
 beforeEach(function (): void {
@@ -262,7 +262,10 @@ describe('Image support with Gemini', function (): void {
                 new UserMessage(
                     'What is this image',
                     additionalContent: [
-                        Image::fromUrl($image),
+                        // EXPLICIT. Prism fetched this URL implicitly before G-44, through an
+                        // unguarded request; the test's intent — send media that lives at a
+                        // URL — is kept, by the call a caller now has to write.
+                        Image::fromUrl($image)->fetchUrlContent(),
                     ],
                 ),
             ])
@@ -405,7 +408,7 @@ describe('provider tools', function (): void {
         });
     });
 
-    it('throws an exception if provider tools are enabled with other tools', function (): void {
+    it('sends includeServerSideToolInvocations when provider tools and custom tools are both present', function (): void {
         FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-search-grounding');
 
         $tools = [
@@ -417,13 +420,90 @@ describe('provider tools', function (): void {
         ];
 
         Prism::text()
-            ->using(Provider::Gemini, 'gemini-2.0-flash')
-            ->withMaxSteps(3)
+            ->using(Provider::Gemini, 'gemini-3.1-pro-preview')
+            ->withMaxSteps(1)
             ->withTools($tools)
             ->withProviderTools([new ProviderTool('google_search')])
             ->withPrompt('What sport fixtures are on today, and will I need a coat based on today\'s weather forecast?')
             ->asText();
-    })->throws(PrismException::class, 'Use of provider tools with custom tools is not currently supported by Gemini.');
+
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            return ($data['tool_config']['includeServerSideToolInvocations'] ?? false) === true;
+        });
+    });
+
+    it('keeps tools a JSON array when provider tools and custom tools are both present', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-search-grounding');
+
+        $tools = [
+            (new Tool)
+                ->as('search_games')
+                ->for('useful for searching current games times in the city')
+                ->withStringParameter('city', 'The city that you want the game times for')
+                ->using(fn (string $city): string => 'The tigers game is at 3pm in detroit'),
+        ];
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-3.1-pro-preview')
+            ->withMaxSteps(1)
+            ->withTools($tools)
+            ->withProviderTools([new ProviderTool('google_search')])
+            ->withPrompt('What sport fixtures are on today?')
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $tools = $request->data()['tools'];
+
+            // Assigning $tools['function_declarations'] alongside the numerically
+            // keyed provider tools produced a mixed-key array, which json_encode
+            // emits as an OBJECT — Gemini and Vertex both reject that, since
+            // `tools` is specified as Tool[].
+            expect(array_is_list($tools))->toBeTrue();
+            expect($tools)->toHaveCount(2);
+            expect($tools[0])->toHaveKey('google_search');
+            expect($tools[1])->toHaveKey('function_declarations');
+
+            return true;
+        });
+    });
+
+    it('keeps tools a JSON array when only custom tools are present', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-multiple-tools');
+
+        $tools = [
+            (new Tool)
+                ->as('get_weather')
+                ->for('use this tool when you need to get weather for the city')
+                ->withStringParameter('city', 'The city that you want the weather for')
+                ->using(fn (string $city): string => 'The weather will be 45° and cold'),
+            (new Tool)
+                ->as('search_games')
+                ->for('useful for searching current games times in the city')
+                ->withStringParameter('city', 'The city that you want the game times for')
+                ->using(fn (string $city): string => 'The tigers game is at 3pm in detroit'),
+        ];
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-2.5-flash')
+            ->withMaxSteps(1)
+            ->withTools($tools)
+            ->withPrompt('What time is the tigers game today in Detroit and should I wear a coat?')
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $tools = $request->data()['tools'];
+
+            // Custom-tools-only must still serialize as Tool[]: a bare
+            // ['function_declarations' => …] emits a JSON object Gemini rejects.
+            expect(array_is_list($tools))->toBeTrue();
+            expect($tools)->toHaveCount(1);
+            expect($tools[0])->toHaveKey('function_declarations');
+
+            return true;
+        });
+    });
 
     it('adds file_search provider tool with options to the request', function (): void {
         FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-file-search');
@@ -446,9 +526,11 @@ describe('provider tools', function (): void {
             $data = $request->data();
 
             expect($data['tools'][0])->toHaveKey('file_search');
-            expect($data['tools'][0]['file_search'])->toBeArray();
-            expect($data['tools'][0]['file_search'])->toHaveKey('file_search_store_names');
-            expect($data['tools'][0]['file_search']['file_search_store_names'])->toBe(['fileSearchStores/prism-test-store-k48zypdei7oj']);
+            // A provider tool's options are a MAP, so they go out as a JSON
+            // object even when empty — see Prism\Prism\Support\JsonMap.
+            expect($data['tools'][0]['file_search'])->toBeInstanceOf(stdClass::class);
+            expect($data['tools'][0]['file_search'])->toHaveProperty('file_search_store_names');
+            expect($data['tools'][0]['file_search']->file_search_store_names)->toBe(['fileSearchStores/prism-test-store-k48zypdei7oj']);
 
             return true;
         });
@@ -619,4 +701,134 @@ describe('Thinking Mode for Gemini', function (): void {
             return true;
         });
     });
+});
+
+describe('Top K for Gemini', function (): void {
+    it('sends topK in generationConfig', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-a-prompt');
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-1.5-flash')
+            ->withPrompt('Who are you?')
+            ->usingTopK(40)
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $data = $request->data();
+
+            expect($data['generationConfig'])
+                ->toHaveKey('topK')
+                ->and($data['generationConfig']['topK'])->toBe(40);
+
+            return true;
+        });
+    });
+
+    it('does not send topK when not set', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-a-prompt');
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-1.5-flash')
+            ->withPrompt('Who are you?')
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $data = $request->data();
+
+            expect($data['generationConfig'] ?? [])->not->toHaveKey('topK');
+
+            return true;
+        });
+    });
+
+    it('sends topK alongside other generation config params', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-a-prompt');
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-1.5-flash')
+            ->withPrompt('Who are you?')
+            ->usingTemperature(0.7)
+            ->usingTopP(0.9)
+            ->usingTopK(40)
+            ->withMaxTokens(100)
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $data = $request->data();
+
+            expect($data['generationConfig'])
+                ->toHaveKey('temperature')
+                ->toHaveKey('topP')
+                ->toHaveKey('topK')
+                ->toHaveKey('maxOutputTokens')
+                ->and($data['generationConfig']['temperature'])->toBe(0.7)
+                ->and($data['generationConfig']['topP'])->toBe(0.9)
+                ->and($data['generationConfig']['topK'])->toBe(40)
+                ->and($data['generationConfig']['maxOutputTokens'])->toBe(100);
+
+            return true;
+        });
+    });
+});
+
+describe('Flex Inference for Gemini', function (): void {
+    it('passes service_tier in the request body', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-a-prompt');
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-2.5-flash')
+            ->withPrompt('Summarize this document.')
+            ->withProviderOptions(['serviceTier' => 'flex'])
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $data = $request->data();
+
+            expect($data)->toHaveKey('service_tier')
+                ->and($data['service_tier'])->toBe('flex');
+
+            return true;
+        });
+    });
+
+    it('does not include service_tier when not set', function (): void {
+        FixtureResponse::fakeResponseSequence('*', 'gemini/generate-text-with-a-prompt');
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-2.5-flash')
+            ->withPrompt('Hello')
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $data = $request->data();
+
+            expect($data)->not->toHaveKey('service_tier');
+
+            return true;
+        });
+    });
+});
+
+it('excludes implicitly cached tokens from promptTokens', function (): void {
+    Http::fake([
+        '*' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [['text' => 'Hello!']], 'role' => 'model'],
+                'finishReason' => 'STOP',
+            ]],
+            'usageMetadata' => [
+                'promptTokenCount' => 100,
+                'cachedContentTokenCount' => 60,
+                'candidatesTokenCount' => 10,
+            ],
+        ]),
+    ])->preventStrayRequests();
+
+    $response = Prism::text()
+        ->using(Provider::Gemini, 'gemini-2.5-flash')
+        ->withPrompt('Hello')
+        ->asText();
+
+    expect($response->usage->promptTokens)->toBe(40)
+        ->and($response->usage->cacheReadInputTokens)->toBe(60);
 });

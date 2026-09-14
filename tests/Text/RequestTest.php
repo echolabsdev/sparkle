@@ -17,6 +17,7 @@ function createTextRequestWithToolChoice(string|ToolChoice|null $toolChoice): Re
         maxTokens: null,
         temperature: null,
         topP: null,
+        topK: null,
         tools: [],
         clientOptions: [],
         clientRetry: [3, 100],

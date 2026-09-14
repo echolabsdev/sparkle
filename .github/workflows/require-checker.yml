@@ -1,0 +1,35 @@
+name: Require Checker
+
+on:
+  push:
+    branches:
+      - main
+      - "*.x"
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  phpv: 8.2
+
+jobs:
+  require-checker:
+    name: composer-require-checker
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.phpv }}
+          coverage: none
+          tools: composer-require-checker
+
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Check declared dependencies match used symbols
+        run: composer-require-checker check --config-file=composer-require-checker.json composer.json

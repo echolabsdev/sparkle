@@ -38,6 +38,45 @@ it('handles rate limit errors (429)', function (): void {
         ->toThrow(PrismRateLimitedException::class);
 });
 
+it('extracts retry_after and rate limit details from quota violations', function (): void {
+    $mockResponse = createGeminiMockResponse(429, [
+        'error' => [
+            'code' => 429,
+            'message' => 'You exceeded your current quota. Please retry in 35.458759309s.',
+            'status' => 'RESOURCE_EXHAUSTED',
+            'details' => [
+                [
+                    '@type' => 'type.googleapis.com/google.rpc.QuotaFailure',
+                    'violations' => [
+                        [
+                            'quotaMetric' => 'generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count',
+                            'quotaId' => 'GenerateContentPaidTierInputTokensPerModelPerMinute',
+                            'quotaValue' => '16000',
+                        ],
+                    ],
+                ],
+                [
+                    '@type' => 'type.googleapis.com/google.rpc.RetryInfo',
+                    'retryDelay' => '35s',
+                ],
+            ],
+        ],
+    ]);
+    $exception = new RequestException($mockResponse);
+
+    try {
+        $this->provider->handleRequestException('gemini-pro', $exception);
+        $this->fail('Expected PrismRateLimitedException to be thrown.');
+    } catch (PrismRateLimitedException $e) {
+        expect($e->retryAfter)->toBe(35)
+            ->and($e->rateLimits)->toHaveCount(1)
+            ->and($e->rateLimits[0]->name)->toBe('GenerateContentPaidTierInputTokensPerModelPerMinute')
+            ->and($e->rateLimits[0]->limit)->toBe(16000)
+            ->and($e->rateLimits[0]->remaining)->toBeNull()
+            ->and($e->rateLimits[0]->resetsAt)->not->toBeNull();
+    }
+});
+
 it('handles provider overloaded errors (503)', function (): void {
     $mockResponse = createGeminiMockResponse(503, []);
     $exception = new RequestException($mockResponse);

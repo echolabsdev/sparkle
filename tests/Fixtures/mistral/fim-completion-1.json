@@ -1,0 +1,23 @@
+{
+  "id": "447e3e0d457e42e98248b5d2ef52a2a3",
+  "object": "chat.completion",
+  "model": "codestral-2405",
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 91,
+    "total_tokens": 99
+  },
+  "created": 1759496862,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "content": "return a+b",
+        "tool_calls": null,
+        "prefix": false,
+        "role": "assistant"
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Prism\Prism\Support\HeaderNames;
 use Prism\Prism\ValueObjects\ProviderRateLimit;
 
 trait ProcessRateLimits
@@ -17,8 +18,12 @@ trait ProcessRateLimits
      */
     protected function processRateLimits(Response $response): array
     {
+        // Folded first: the prefix below is matched case-sensitively against the
+        // raw wire case, so a title-casing gateway used to filter every header
+        // out and report no rate limits at all. See Anthropic's reader for the
+        // same fix and the reason the fold is ASCII-only.
         $limitHeaders = array_filter(
-            $response->getHeaders(),
+            HeaderNames::folded($response->getHeaders()),
             fn ($headerName) => Str::startsWith($headerName, 'x-ratelimit-'),
             ARRAY_FILTER_USE_KEY
         );

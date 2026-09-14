@@ -376,6 +376,34 @@ describe('Structured output with tools for Anthropic', function (): void {
         expect($payload['tool_choice'])->toBe(['type' => 'tool', 'name' => 'output_structured_data']);
     });
 
+    it('does not set tool_choice when adaptive thinking is used with tool calling', function (): void {
+        Prism::fake();
+
+        $schema = new ObjectSchema(
+            'output',
+            'the output object',
+            [
+                new StringSchema('answer', 'The answer'),
+            ],
+            ['answer']
+        );
+
+        $request = Prism::structured()
+            ->withSchema($schema)
+            ->using(Provider::Anthropic, 'claude-sonnet-4-6')
+            ->withPrompt('Test')
+            ->withProviderOptions([
+                'thinking' => ['type' => 'adaptive'],
+                'use_tool_calling' => true,
+            ]);
+
+        $payload = Structured::buildHttpRequestPayload(
+            $request->toRequest()
+        );
+
+        expect($payload)->not->toHaveKey('tool_choice');
+    });
+
     it('can generate structured output with provider tools using native output format', function (): void {
         FixtureResponse::fakeResponseSequence('*', 'anthropic/structured-with-provider-tool-native');
 

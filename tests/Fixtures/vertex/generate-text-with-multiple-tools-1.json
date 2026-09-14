@@ -1,0 +1,35 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "functionCall": {
+              "name": "search_games",
+              "args": {
+                "city": "Detroit"
+              }
+            }
+          },
+          {
+            "functionCall": {
+              "name": "get_weather",
+              "args": {
+                "city": "Detroit"
+              }
+            }
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "avgLogprobs": -0.15
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 150,
+    "candidatesTokenCount": 20,
+    "totalTokenCount": 170
+  },
+  "modelVersion": "gemini-1.5-flash"
+}

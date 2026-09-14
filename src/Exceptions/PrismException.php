@@ -10,6 +10,10 @@ use Throwable;
 
 class PrismException extends Exception
 {
+    public ?int $httpStatus = null;
+
+    public ?string $responseBody = null;
+
     public static function promptOrMessages(): self
     {
         return new self('You can only use `prompt` or `messages`');
@@ -39,6 +43,14 @@ class PrismException extends Exception
         );
     }
 
+    public static function malformedToolCallArguments(string $toolName, Throwable $previous): self
+    {
+        return new self(
+            sprintf('Tool call arguments for tool %s are not valid JSON', $toolName),
+            previous: $previous
+        );
+    }
+
     public static function invalidParameterInTool(string $toolName, Throwable $previous): self
     {
         return new self(
@@ -55,9 +67,16 @@ class PrismException extends Exception
         );
     }
 
-    public static function providerResponseError(string $message): self
-    {
-        return new self($message);
+    public static function providerResponseError(
+        string $message,
+        ?int $httpStatus = null,
+        ?string $responseBody = null,
+    ): self {
+        $e = new self($message);
+        $e->httpStatus = $httpStatus;
+        $e->responseBody = $responseBody;
+
+        return $e;
     }
 
     public static function providerRequestError(string $model, Throwable $previous): self

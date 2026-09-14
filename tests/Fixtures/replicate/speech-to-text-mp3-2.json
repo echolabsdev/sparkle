@@ -1,0 +1,535 @@
+{
+    "id": "4f1q2sdbwsrm80ct9fsv9k978c",
+    "model": "vaibhavs10\/incredibly-fast-whisper",
+    "version": "3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c",
+    "input": {
+        "audio": "data:audio\/mpeg;base64,...",
+        "task": "transcribe"
+    },
+    "logs": "Voila!\u2728 Your file has been transcribed!\n",
+    "output": {
+        "chunks": [
+            {
+                "text": " know by by that conference um so we'll uh i think that's a good excuse to be on the newsletter too",
+                "timestamp": [
+                    0,
+                    8.38
+                ]
+            },
+            {
+                "text": " is like yeah find out about 1.0 like as soon as possible yep totally yeah i like that idea then",
+                "timestamp": [
+                    8.38,
+                    15.24
+                ]
+            },
+            {
+                "text": " that gets you not as much pressure for taking 1.0 before you go to laracon it gets an added",
+                "timestamp": [
+                    15.24,
+                    23.88
+                ]
+            },
+            {
+                "text": " benefit of getting people on the newsletter",
+                "timestamp": [
+                    23.88,
+                    25.88
+                ]
+            },
+            {
+                "text": " and a little bit more exposure in there and then you know in the meantime before you can i don't",
+                "timestamp": [
+                    25.88,
+                    32.16
+                ]
+            },
+            {
+                "text": " know maybe start drafting up newsletter launch email number one yeah get ready yeah i might",
+                "timestamp": [
+                    32.16,
+                    40.42
+                ]
+            },
+            {
+                "text": " right now i'm using button down email for everything may consider switching over to Bento just because Aaron loves it.",
+                "timestamp": [
+                    40.42,
+                    49.6
+                ]
+            },
+            {
+                "text": " And I like using things that people recommend.",
+                "timestamp": [
+                    49.76,
+                    52.46
+                ]
+            },
+            {
+                "text": " So yeah, I might, I might switch providers right before I pull the trigger on it.",
+                "timestamp": [
+                    52.7,
+                    57.78
+                ]
+            },
+            {
+                "text": " So that's, that's something I'm gonna have to look at and maybe I'll, I'll work on, on the plane or something.",
+                "timestamp": [
+                    57.82,
+                    62.4
+                ]
+            },
+            {
+                "text": " I'm on my way out to Denver.",
+                "timestamp": [
+                    63.14,
+                    64.18
+                ]
+            },
+            {
+                "text": " I don't know. It's just getting close, man. I'm on my way out to Denver. I don't know.",
+                "timestamp": [
+                    64.48,
+                    65.02
+                ]
+            },
+            {
+                "text": " It's just getting close, man.",
+                "timestamp": [
+                    65.14,
+                    66.18
+                ]
+            },
+            {
+                "text": " I leave on Sunday.",
+                "timestamp": [
+                    66.2,
+                    66.96
+                ]
+            },
+            {
+                "text": " It's Thursday.",
+                "timestamp": [
+                    67.54,
+                    68.38
+                ]
+            },
+            {
+                "text": " So this is all coming up really quick and there's a lot I want to do.",
+                "timestamp": [
+                    68.7,
+                    72.68
+                ]
+            },
+            {
+                "text": " So maybe I don't sleep tonight.",
+                "timestamp": [
+                    72.88,
+                    75.02
+                ]
+            },
+            {
+                "text": " Yeah.",
+                "timestamp": [
+                    76.06,
+                    76.16
+                ]
+            },
+            {
+                "text": " But even if you just like captured email addresses, like you can always export them, import them into the new place anyways.",
+                "timestamp": [
+                    76.22,
+                    82.24
+                ]
+            },
+            {
+                "text": " Yep.",
+                "timestamp": [
+                    83.24,
+                    83.44
+                ]
+            },
+            {
+                "text": " Yeah.",
+                "timestamp": [
+                    83.82,
+                    84.06
+                ]
+            },
+            {
+                "text": " A hundred percent. So cool, man. Moving on from newsletters. port them into the new place anyways. Yep. Yeah, 100%.",
+                "timestamp": [
+                    84.16,
+                    85.18
+                ]
+            },
+            {
+                "text": " So cool, man.",
+                "timestamp": [
+                    85.18,
+                    85.82
+                ]
+            },
+            {
+                "text": " Moving on from newsletters, I think you'd added something here about cloud custom commands.",
+                "timestamp": [
+                    86.02,
+                    91.8
+                ]
+            },
+            {
+                "text": " And that's something that we talked about, I think, last week a little bit.",
+                "timestamp": [
+                    91.92,
+                    94.64
+                ]
+            },
+            {
+                "text": " And we may be starting to find some excuses for using custom slash commands and stuff.",
+                "timestamp": [
+                    95.04,
+                    100.92
+                ]
+            },
+            {
+                "text": " So I'd love to hear about your experience here.",
+                "timestamp": [
+                    100.92,
+                    103.98
+                ]
+            },
+            {
+                "text": " Yeah, definitely definitely so this was",
+                "timestamp": [
+                    104.72,
+                    106.66
+                ]
+            },
+            {
+                "text": " definitely prompted from last week's conversation and as i'm working through the week i was like",
+                "timestamp": [
+                    106.66,
+                    112.6
+                ]
+            },
+            {
+                "text": " okay what can i possibly make a custom command for so i basically started off with um two things",
+                "timestamp": [
+                    112.6,
+                    120.74
+                ]
+            },
+            {
+                "text": " i created like a refresh repo command which which basically like you run it, it scans,",
+                "timestamp": [
+                    120.74,
+                    128.3
+                ]
+            },
+            {
+                "text": " it basically like re-initiates the, the cloud MD file. It reads what's there. It looks at the",
+                "timestamp": [
+                    128.3,
+                    137.82
+                ]
+            },
+            {
+                "text": " application, sees any new like dependencies or commands or whatever the case is and updates anything that it deems important to add back to",
+                "timestamp": [
+                    137.82,
+                    148.12
+                ]
+            },
+            {
+                "text": " that markdown file and it's just nice if you have like a repo that has a lot of development a lot",
+                "timestamp": [
+                    148.12,
+                    153.98
+                ]
+            },
+            {
+                "text": " of people working in it and you don't always want to capture every single new like merge or rebase",
+                "timestamp": [
+                    153.98,
+                    161.5
+                ]
+            },
+            {
+                "text": " like every other day to it so maybe your brew updates running that like the",
+                "timestamp": [
+                    161.5,
+                    167.16
+                ]
+            },
+            {
+                "text": " repo refresh like once a week or something like that would be good because then you don't have",
+                "timestamp": [
+                    167.16,
+                    171.6
+                ]
+            },
+            {
+                "text": " to type out like oh rescan the repo and do this and that and the other thing like now this will",
+                "timestamp": [
+                    171.6,
+                    176.66
+                ]
+            },
+            {
+                "text": " just take care of it so that was i think the first one that i made so that one's been really helpful",
+                "timestamp": [
+                    176.66,
+                    182.12
+                ]
+            },
+            {
+                "text": " refreshing everything because the first time i ran it, it picked up like,",
+                "timestamp": [
+                    182.12,
+                    186.16
+                ]
+            },
+            {
+                "text": " I think the last time I refreshed it was,",
+                "timestamp": [
+                    186.16,
+                    188.68
+                ]
+            },
+            {
+                "text": " I don't know, three, four weeks ago.",
+                "timestamp": [
+                    188.68,
+                    190.36
+                ]
+            },
+            {
+                "text": " So it found a whole bunch more stuff.",
+                "timestamp": [
+                    190.36,
+                    191.98
+                ]
+            },
+            {
+                "text": " It updated architecture changes, a whole bunch of things to it.",
+                "timestamp": [
+                    191.98,
+                    197.02
+                ]
+            },
+            {
+                "text": " So that's been really helpful.",
+                "timestamp": [
+                    197.02,
+                    198.3
+                ]
+            },
+            {
+                "text": " Probably going to run that on a weekly basis",
+                "timestamp": [
+                    198.3,
+                    200.98
+                ]
+            },
+            {
+                "text": " now on all the repos that we're working on. The other one is what I just named like a branch context is like,",
+                "timestamp": [
+                    200.98,
+                    210.64
+                ]
+            },
+            {
+                "text": " I'm either switching to a branch that I'm working on or pulling down for a",
+                "timestamp": [
+                    210.68,
+                    215.44
+                ]
+            },
+            {
+                "text": " review or something like that of like the repo refreshes for main branch.",
+                "timestamp": [
+                    215.44,
+                    221.02
+                ]
+            },
+            {
+                "text": " And then when I'm going into something else like scan for changes,",
+                "timestamp": [
+                    221.02,
+                    224.26
+                ]
+            },
+            {
+                "text": " tell me what's in the last handful of commits and kind of refresh your understanding of what has changed in",
+                "timestamp": [
+                    224.48,
+                    230.46
+                ]
+            },
+            {
+                "text": " the repo in here. And then we can either work towards something else together, or I'm asking",
+                "timestamp": [
+                    230.46,
+                    236.46
+                ]
+            },
+            {
+                "text": " you for why did this change or why did that change or whatever the case is. It's just refreshing the",
+                "timestamp": [
+                    236.46,
+                    242.02
+                ]
+            },
+            {
+                "text": " immediate context for that branch. So that's been helpful as well.",
+                "timestamp": [
+                    242.02,
+                    246.06
+                ]
+            },
+            {
+                "text": " That's sick.",
+                "timestamp": [
+                    246.42,
+                    246.92
+                ]
+            },
+            {
+                "text": " Yeah.",
+                "timestamp": [
+                    247.66,
+                    247.86
+                ]
+            },
+            {
+                "text": " So I guess I'll pause there because then I have another whole workflow.",
+                "timestamp": [
+                    248.26,
+                    251.26
+                ]
+            },
+            {
+                "text": " So any questions on either one of those or any specific details?",
+                "timestamp": [
+                    251.26,
+                    257
+                ]
+            },
+            {
+                "text": " No, man.",
+                "timestamp": [
+                    257.54,
+                    257.92
+                ]
+            },
+            {
+                "text": " I think that sounds great.",
+                "timestamp": [
+                    258.06,
+                    258.88
+                ]
+            },
+            {
+                "text": " Those are very useful things to have as slash commands.",
+                "timestamp": [
+                    259.08,
+                    261.44
+                ]
+            },
+            {
+                "text": " things to have is slash commands yeah yeah that's it's i'm still i'm still personally finding like my own use cases for them i haven't i haven't dove too far into it yet",
+                "timestamp": [
+                    267.26,
+                    272.98
+                ]
+            },
+            {
+                "text": " but maybe after lara con i'll i'll spend a little time you know coming up with some stuff but i i",
+                "timestamp": [
+                    272.98,
+                    280.02
+                ]
+            },
+            {
+                "text": " think those are like i think it serves like some decent inspiration for some some other slash commands i'm thinking up right now so yeah what else you got um yeah so the next one which i do a",
+                "timestamp": [
+                    280.02,
+                    292.46
+                ]
+            },
+            {
+                "text": " lot is pr reviews for others and coming into like a new tech stack like there's some things i am just",
+                "timestamp": [
+                    292.46,
+                    298.56
+                ]
+            },
+            {
+                "text": " not aware about or like best practices or whatever so there's a default slash review command that comes out of the box in cloud",
+                "timestamp": [
+                    298.56,
+                    308.32
+                ]
+            },
+            {
+                "text": " code.",
+                "timestamp": [
+                    308.32,
+                    308.66
+                ]
+            },
+            {
+                "text": " And that gives a decent understanding.",
+                "timestamp": [
+                    308.8,
+                    312.24
+                ]
+            },
+            {
+                "text": " Like it'll tell you,",
+                "timestamp": [
+                    312.38,
+                    313.36
+                ]
+            },
+            {
+                "text": " you know,",
+                "timestamp": [
+                    313.42,
+                    313.96
+                ]
+            },
+            {
+                "text": " what's changed,",
+                "timestamp": [
+                    313.98,
+                    314.82
+                ]
+            },
+            {
+                "text": " what maybe some of the,",
+                "timestamp": [
+                    314.96,
+                    316.58
+                ]
+            }
+        ],
+        "text": " know by by that conference um so we'll uh i think that's a good excuse to be on the newsletter too is like yeah find out about 1.0 like as soon as possible yep totally yeah i like that idea then that gets you not as much pressure for taking 1.0 before you go to laracon it gets an added benefit of getting people on the newsletter and a little bit more exposure in there and then you know in the meantime before you can i don't know maybe start drafting up newsletter launch email number one yeah get ready yeah i might right now i'm using button down email for everything may consider switching over to Bento just because Aaron loves it. And I like using things that people recommend. So yeah, I might, I might switch providers right before I pull the trigger on it. So that's, that's something I'm gonna have to look at and maybe I'll, I'll work on, on the plane or something. I'm on my way out to Denver. I don't know. It's just getting close, man. I'm on my way out to Denver. I don't know. It's just getting close, man. I leave on Sunday. It's Thursday. So this is all coming up really quick and there's a lot I want to do. So maybe I don't sleep tonight. Yeah. But even if you just like captured email addresses, like you can always export them, import them into the new place anyways. Yep. Yeah. A hundred percent. So cool, man. Moving on from newsletters. port them into the new place anyways. Yep. Yeah, 100%. So cool, man. Moving on from newsletters, I think you'd added something here about cloud custom commands. And that's something that we talked about, I think, last week a little bit. And we may be starting to find some excuses for using custom slash commands and stuff. So I'd love to hear about your experience here. Yeah, definitely definitely so this was definitely prompted from last week's conversation and as i'm working through the week i was like okay what can i possibly make a custom command for so i basically started off with um two things i created like a refresh repo command which which basically like you run it, it scans, it basically like re-initiates the, the cloud MD file. It reads what's there. It looks at the application, sees any new like dependencies or commands or whatever the case is and updates anything that it deems important to add back to that markdown file and it's just nice if you have like a repo that has a lot of development a lot of people working in it and you don't always want to capture every single new like merge or rebase like every other day to it so maybe your brew updates running that like the repo refresh like once a week or something like that would be good because then you don't have to type out like oh rescan the repo and do this and that and the other thing like now this will just take care of it so that was i think the first one that i made so that one's been really helpful refreshing everything because the first time i ran it, it picked up like, I think the last time I refreshed it was, I don't know, three, four weeks ago. So it found a whole bunch more stuff. It updated architecture changes, a whole bunch of things to it. So that's been really helpful. Probably going to run that on a weekly basis now on all the repos that we're working on. The other one is what I just named like a branch context is like, I'm either switching to a branch that I'm working on or pulling down for a review or something like that of like the repo refreshes for main branch. And then when I'm going into something else like scan for changes, tell me what's in the last handful of commits and kind of refresh your understanding of what has changed in the repo in here. And then we can either work towards something else together, or I'm asking you for why did this change or why did that change or whatever the case is. It's just refreshing the immediate context for that branch. So that's been helpful as well. That's sick. Yeah. So I guess I'll pause there because then I have another whole workflow. So any questions on either one of those or any specific details? No, man. I think that sounds great. Those are very useful things to have as slash commands. things to have is slash commands yeah yeah that's it's i'm still i'm still personally finding like my own use cases for them i haven't i haven't dove too far into it yet but maybe after lara con i'll i'll spend a little time you know coming up with some stuff but i i think those are like i think it serves like some decent inspiration for some some other slash commands i'm thinking up right now so yeah what else you got um yeah so the next one which i do a lot is pr reviews for others and coming into like a new tech stack like there's some things i am just not aware about or like best practices or whatever so there's a default slash review command that comes out of the box in cloud code. And that gives a decent understanding. Like it'll tell you, you know, what's changed, what maybe some of the,"
+    },
+    "data_removed": false,
+    "error": null,
+    "source": "api",
+    "status": "succeeded",
+    "created_at": "2025-11-03T23:00:51.814Z",
+    "started_at": "2025-11-03T23:00:52.189785656Z",
+    "completed_at": "2025-11-03T23:00:58.006454501Z",
+    "urls": {
+        "cancel": "https:\/\/api.replicate.com\/v1\/predictions\/4f1q2sdbwsrm80ct9fsv9k978c\/cancel",
+        "get": "https:\/\/api.replicate.com\/v1\/predictions\/4f1q2sdbwsrm80ct9fsv9k978c",
+        "web": "https:\/\/replicate.com\/p\/4f1q2sdbwsrm80ct9fsv9k978c"
+    },
+    "metrics": {
+        "predict_time": 5.816668844,
+        "total_time": 6.192454501
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "The tigers game is at 3pm today in Detroit. The weather will be 45° and cold, so you should wear a coat."
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "avgLogprobs": -0.12
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 200,
+    "candidatesTokenCount": 22,
+    "totalTokenCount": 222
+  },
+  "modelVersion": "gemini-1.5-flash"
+}

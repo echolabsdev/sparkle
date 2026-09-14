@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use Prism\Prism\Enums\Provider;
+use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Video;
@@ -19,6 +20,49 @@ beforeEach(function (): void {
 });
 
 describe('Media support with Gemini', function (): void {
+    it('refuses a url it cannot pass by reference, without fetching it', function (): void {
+        // G-44. Gemini takes a URL as a file reference only for YouTube links and
+        // Gemini File API URIs. Any other URL used to be fetched and inlined,
+        // through an unguarded server-side request. It is now refused with the
+        // explicit alternative named, and NOTHING is sent — not the fetch, and
+        // not a request to Gemini carrying an empty image.
+        Http::fake(['*' => Http::response('never used')]);
+
+        expect(fn () => Prism::text()
+            ->using(Provider::Gemini, 'gemini-1.5-flash')
+            ->withMessages([
+                new UserMessage('What is in this audio', additionalContent: [
+                    Audio::fromUrl('http://169.254.169.254/latest/meta-data/'),
+                ]),
+            ])
+            ->asText())
+            ->toThrow(PrismException::class, 'fetchUrlContent()');
+
+        Http::assertSentCount(0);
+    });
+
+    it('still passes a YouTube url by reference, without fetching it', function (): void {
+        // The half of Gemini's URL handling that was never a fetch, and must not
+        // have been caught in the change: a recognised URL goes to the provider
+        // as a file URI, and no request is made to the URL itself.
+        FixtureResponse::fakeResponseSequence('generateContent', 'gemini/media-detection');
+
+        Prism::text()
+            ->using(Provider::Gemini, 'gemini-1.5-flash')
+            ->withMessages([
+                new UserMessage('What is in this video', additionalContent: [
+                    Video::fromUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+                ]),
+            ])
+            ->asText();
+
+        Http::assertSent(function (Request $request): bool {
+            $parts = $request->data()['contents'][0]['parts'] ?? [];
+
+            return ($parts[1]['file_data']['file_uri'] ?? null) === 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+        });
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'youtube.com'));
+    });
 
     it('can send media from url for video files', function (): void {
         FixtureResponse::fakeResponseSequence('generateContent', 'gemini/media-detection');
@@ -39,7 +83,10 @@ describe('Media support with Gemini', function (): void {
                 new UserMessage(
                     'What is in this video',
                     additionalContent: [
-                        Video::fromUrl($videoUrl),
+                        // EXPLICIT. Prism fetched this URL implicitly before G-44, through an
+                        // unguarded request; the test's intent — send media that lives at a
+                        // URL — is kept, by the call a caller now has to write.
+                        Video::fromUrl($videoUrl)->fetchUrlContent(),
                     ],
                 ),
             ])
@@ -153,7 +200,7 @@ describe('Media support with Gemini', function (): void {
                     'text' => 'Transcribe this audio',
                 ])
                 ->and($message[1]['inline_data'])->toHaveKeys(['mime_type', 'data'])
-                ->and($message[1]['inline_data']['mime_type'])->toBe('audio/x-wav')
+                ->and($message[1]['inline_data']['mime_type'])->toBe('audio/wav')
                 ->and($message[1]['inline_data']['data'])->toBe(
                     base64_encode(file_get_contents('tests/Fixtures/sample-audio.wav'))
                 );
@@ -171,7 +218,7 @@ describe('Media support with Gemini', function (): void {
             $audioUrl => Http::response(
                 file_get_contents('tests/Fixtures/sample-audio.wav'),
                 200,
-                ['Content-Type' => 'audio/x-wav']
+                ['Content-Type' => 'audio/wav']
             ),
         ]);
 
@@ -181,7 +228,10 @@ describe('Media support with Gemini', function (): void {
                 new UserMessage(
                     'What is in this audio',
                     additionalContent: [
-                        Audio::fromUrl($audioUrl),
+                        // EXPLICIT. Prism fetched this URL implicitly before G-44, through an
+                        // unguarded request; the test's intent — send media that lives at a
+                        // URL — is kept, by the call a caller now has to write.
+                        Audio::fromUrl($audioUrl)->fetchUrlContent(),
                     ],
                 ),
             ])
@@ -197,7 +247,7 @@ describe('Media support with Gemini', function (): void {
                         'text' => 'What is in this audio',
                     ])
                     ->and($message[1]['inline_data'])->toHaveKeys(['mime_type', 'data'])
-                    ->and($message[1]['inline_data']['mime_type'])->toBe('audio/x-wav')
+                    ->and($message[1]['inline_data']['mime_type'])->toBe('audio/wav')
                     ->and($message[1]['inline_data']['data'])->toBe(
                         base64_encode(file_get_contents('tests/Fixtures/sample-audio.wav'))
                     );

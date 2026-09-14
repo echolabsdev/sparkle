@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Prism\Prism\ValueObjects;
 
+use Prism\Prism\Support\JsonMap;
+
 readonly class Artifact
 {
     /**
@@ -25,7 +27,7 @@ readonly class Artifact
             'id' => $this->id,
             'data' => $this->data,
             'mime_type' => $this->mimeType,
-            'metadata' => $this->metadata,
+            'metadata' => JsonMap::of($this->metadata),
         ];
     }
 

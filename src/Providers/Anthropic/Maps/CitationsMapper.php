@@ -8,6 +8,7 @@ use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use Prism\Prism\Enums\Citations\CitationSourcePositionType;
 use Prism\Prism\Enums\Citations\CitationSourceType;
+use Prism\Prism\Providers\Support\Payload;
 use Prism\Prism\ValueObjects\Citation;
 use Prism\Prism\ValueObjects\MessagePartWithCitations;
 
@@ -45,7 +46,7 @@ class CitationsMapper
             $messagePartWithCitations->citations
         );
 
-        return array_filter([
+        return Payload::compact([
             'type' => 'text',
             'text' => $messagePartWithCitations->outputText,
             'citations' => $citations ?: null,
@@ -196,6 +197,7 @@ class CitationsMapper
             return [];
         }
 
+        // Already correct: an explicit null-only callback, so a 0 index survives.
         return array_filter([
             "start_$indexPropertyCommonPart" => $citation->sourceStartIndex,
             "end_$indexPropertyCommonPart" => $citation->sourceEndIndex,

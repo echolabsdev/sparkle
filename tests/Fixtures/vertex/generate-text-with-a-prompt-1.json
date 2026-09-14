@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "I am a large language model, trained by Google. I am an AI, and I don't have a name, feelings, or personal experiences. My purpose is to process information and respond to a wide range of prompts and questions in a helpful and informative way.\n"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "avgLogprobs": -0.12800796408402293
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 4,
+    "candidatesTokenCount": 57,
+    "totalTokenCount": 61
+  },
+  "modelVersion": "gemini-1.5-flash"
+}

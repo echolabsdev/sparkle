@@ -148,6 +148,43 @@ describe('Thinking parameter', function (): void {
             return true;
         });
     });
+
+    it('sends think:false when withReasoning(false) is used', function (): void {
+        FixtureResponse::fakeResponseSequence('api/chat', 'ollama/text-without-thinking');
+
+        Prism::text()
+            ->using('ollama', 'gpt-oss')
+            ->withPrompt('Test prompt')
+            ->withReasoning(false)
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $body = $request->data();
+            expect($body)->toHaveKey('think');
+            expect($body['think'])->toBe(false);
+
+            return true;
+        });
+    });
+
+    it('honors explicit thinking provider option over withReasoning(false)', function (): void {
+        FixtureResponse::fakeResponseSequence('api/chat', 'ollama/text-with-thinking-enabled');
+
+        Prism::text()
+            ->using('ollama', 'gpt-oss')
+            ->withPrompt('Test prompt')
+            ->withProviderOptions(['thinking' => true])
+            ->withReasoning(false)
+            ->asText();
+
+        Http::assertSent(function (Request $request): true {
+            $body = $request->data();
+            expect($body)->toHaveKey('think');
+            expect($body['think'])->toBe(true);
+
+            return true;
+        });
+    });
 });
 
 describe('Keep alive parameter', function (): void {

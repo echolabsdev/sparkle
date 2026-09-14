@@ -17,12 +17,12 @@ trait HasProviderOptions
         return $this;
     }
 
-    public function providerOptions(?string $valuePath = null): mixed
+    public function providerOptions(?string $valuePath = null, mixed $default = null): mixed
     {
         if ($valuePath === null) {
             return $this->providerOptions;
         }
 
-        return data_get($this->providerOptions, $valuePath);
+        return data_get($this->providerOptions, $valuePath, $default);
     }
 }

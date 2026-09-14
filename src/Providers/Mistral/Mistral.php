@@ -17,9 +17,12 @@ use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Exceptions\PrismProviderOverloadedException;
 use Prism\Prism\Exceptions\PrismRateLimitedException;
 use Prism\Prism\Exceptions\PrismRequestTooLargeException;
+use Prism\Prism\Fim\Request as FimRequest;
+use Prism\Prism\Fim\Response as FimResponse;
 use Prism\Prism\Providers\Mistral\Concerns\ProcessRateLimits;
 use Prism\Prism\Providers\Mistral\Handlers\Audio;
 use Prism\Prism\Providers\Mistral\Handlers\Embeddings;
+use Prism\Prism\Providers\Mistral\Handlers\Fim;
 use Prism\Prism\Providers\Mistral\Handlers\OCR;
 use Prism\Prism\Providers\Mistral\Handlers\Stream;
 use Prism\Prism\Providers\Mistral\Handlers\Structured;
@@ -57,6 +60,19 @@ class Mistral extends Provider
     public function structured(StructuredRequest $request): StructuredResponse
     {
         $handler = new Structured(
+            $this->client(
+                $request->clientOptions(),
+                $request->clientRetry()
+            )
+        );
+
+        return $handler->handle($request);
+    }
+
+    #[\Override]
+    public function fim(FimRequest $request): FimResponse
+    {
+        $handler = new Fim(
             $this->client(
                 $request->clientOptions(),
                 $request->clientRetry()

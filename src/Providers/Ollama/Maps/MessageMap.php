@@ -6,6 +6,7 @@ namespace Prism\Prism\Providers\Ollama\Maps;
 
 use Exception;
 use Prism\Prism\Contracts\Message;
+use Prism\Prism\Providers\Support\Payload;
 use Prism\Prism\ValueObjects\Media\Image;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
 use Prism\Prism\ValueObjects\Messages\SystemMessage;
@@ -89,13 +90,13 @@ class MessageMap
 
     protected function mapAssistantMessage(AssistantMessage $message): void
     {
-        $this->mappedMessages[] = array_filter([
+        $this->mappedMessages[] = Payload::compact([
             'role' => 'assistant',
             'content' => $message->content,
             'tool_calls' => $message->toolCalls ? array_map(fn (ToolCall $toolCall): array => [
                 'function' => [
                     'name' => $toolCall->name,
-                    'arguments' => (object) $toolCall->arguments(),
+                    'arguments' => $toolCall->argumentsAsObject(),
                 ],
             ], $message->toolCalls) : null,
         ]);

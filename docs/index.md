@@ -15,7 +15,7 @@ hero:
       link: https://github.com/sponsors/sixlive
     - theme: alt
       text: Github
-      link: https://github.com/prism-php/prism
+      link: https://github.com/Particle-Academy/prism
   image:
     src: /assets/prism-logo.webp
     alt: Prism Logo

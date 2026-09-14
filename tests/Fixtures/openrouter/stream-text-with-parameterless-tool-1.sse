@@ -1,0 +1,18 @@
+data: {"id":"gen-1760518100-Kp3RtWnYxQBA2SAbiPRM","provider":"OpenAI","model":"openai/gpt-5","object":"chat.completion.chunk","created":1760518100,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null,"native_finish_reason":null,"logprobs":null}]}
+
+: OPENROUTER PROCESSING
+
+: OPENROUTER PROCESSING
+
+data: {"id":"gen-1760518100-Kp3RtWnYxQBA2SAbiPRM","provider":"OpenAI","model":"openai/gpt-5","object":"chat.completion.chunk","created":1760518100,"choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"id":"call_ZQpWJRxU5EIprhJ4cpxTMkNr","index":0,"type":"function","function":{"name":"time","arguments":""}}]},"finish_reason":null,"native_finish_reason":null,"logprobs":null}]}
+
+data: {"id":"gen-1760518100-Kp3RtWnYxQBA2SAbiPRM","provider":"OpenAI","model":"openai/gpt-5","object":"chat.completion.chunk","created":1760518100,"choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"type":"function","function":{"arguments":"{}"}}]},"finish_reason":null,"native_finish_reason":null,"logprobs":null}]}
+
+: OPENROUTER PROCESSING
+
+data: {"id":"gen-1760518100-Kp3RtWnYxQBA2SAbiPRM","provider":"OpenAI","model":"openai/gpt-5","object":"chat.completion.chunk","created":1760518100,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":"tool_calls","native_finish_reason":"completed","logprobs":null}]}
+
+data: {"id":"gen-1760518100-Kp3RtWnYxQBA2SAbiPRM","provider":"OpenAI","model":"openai/gpt-5","object":"chat.completion.chunk","created":1760518100,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null,"native_finish_reason":null,"logprobs":null}],"usage":{"prompt_tokens":58,"completion_tokens":21,"total_tokens":79,"cost":0.0003825,"is_byok":false,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"cost_details":{"upstream_inference_cost":null,"upstream_inference_prompt_cost":0.0000725,"upstream_inference_completions_cost":0.00031},"completion_tokens_details":{"reasoning_tokens":0,"image_tokens":0}}}
+
+data: [DONE]
+

@@ -7,6 +7,9 @@ on:
       - "*.x"
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -16,12 +19,9 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         php: [8.2, 8.3, 8.4]
-        laravel: [11.*, 12.*, 13.*]
+        laravel: [12.*, 13.*]
         stability: [prefer-lowest, prefer-stable]
         include:
-          - laravel: 11.*
-            testbench: 9.*
-            carbon: ^2.63
           - laravel: 12.*
             testbench: 10.*
             carbon: ^3.8.4
@@ -60,3 +60,33 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest --parallel
+
+  third-party:
+    name: Third-party dependency allowlist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # This job only reads files, so it keeps no token in .git/config for
+      # the fetched checker to find.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Every direct dependency must be approved on the org allowlist and still
+      # maintained. The list is fetched, never vendored, so there is no copy here
+      # to drift. This has to pass BEFORE a tag is pushed: Packagist publishes a
+      # Composer package the moment its tag exists, so the release guard, which
+      # requires this workflow to have succeeded, can only withhold the GitHub
+      # release. It cannot withdraw a version.
+      - name: Fetch the third-party allowlist
+        uses: actions/checkout@v4
+        with:
+          repository: Particle-Academy/.github
+          path: .third-party-allowlist
+          persist-credentials: false
+
+      - name: Third-party dependency allowlist
+        run: |
+          node .third-party-allowlist/third-party/check.mjs --repo .
+          node -e "require('node:fs').rmSync('.third-party-allowlist',{recursive:true,force:true})"

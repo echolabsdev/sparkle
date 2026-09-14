@@ -9,6 +9,31 @@
 ```
 ## Provider-specific options
 
+### Reasoning Effort
+
+Adjustable reasoning is currently supported by `mistral-small-latest` via the `reasoning_effort` parameter.
+
+```php
+use Prism\Prism\Facades\Prism;
+
+$response = Prism::text()
+    ->using('mistral', 'mistral-small-latest')
+    ->withPrompt('Solve this logic problem step by step.')
+    ->withProviderOptions([ // [!code focus]
+        'reasoning_effort' => 'high', // [!code focus]
+    ]) // [!code focus]
+    ->asText();
+
+// Access the final answer
+echo $response->text;
+
+// Access the reasoning process
+echo $response->additionalContent['thinking'];
+```
+
+More details in the official Mistral documentation:
+https://docs.mistral.ai/capabilities/reasoning/adjustable
+
 ## Reasoning Models
 ### Using Reasoning Models
 

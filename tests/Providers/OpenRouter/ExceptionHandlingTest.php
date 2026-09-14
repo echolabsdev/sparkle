@@ -18,12 +18,13 @@ beforeEach(function (): void {
     );
 });
 
-function createMockResponse(int $statusCode, array $json = [], array $headers = []): Response
+function createMockResponse(int $statusCode, array $json = [], array $headers = [], ?string $body = null): Response
 {
     $mockResponse = Mockery::mock(Response::class);
     $mockResponse->shouldReceive('getStatusCode')->andReturn($statusCode);
     $mockResponse->shouldReceive('status')->andReturn($statusCode);
     $mockResponse->shouldReceive('json')->andReturn($json);
+    $mockResponse->shouldReceive('body')->andReturn($body ?? (string) json_encode($json));
     $mockResponse->shouldReceive('toPsrResponse')->andReturn(new PsrResponse($statusCode));
 
     if (isset($headers['retry-after'])) {
@@ -158,7 +159,43 @@ it('extracts error message from metadata.raw when available', function (): void 
     $exception = new RequestException($mockResponse);
 
     expect(fn () => $this->provider->handleRequestException('test-model', $exception))
-        ->toThrow(PrismException::class, 'OpenRouter Bad Request: Invalid schema for response_format: Missing required field');
+        ->toThrow(PrismException::class, 'OpenRouter Bad Request (Azure): Invalid schema for response_format: Missing required field');
+});
+
+it('extracts error message from metadata.raw with top-level message key (Bedrock-style)', function (): void {
+    $mockResponse = createMockResponse(400, [
+        'error' => [
+            'code' => 400,
+            'message' => 'Provider returned error',
+            'metadata' => [
+                'raw' => '{"message":"messages.0.content.1.image.source.base64.data: At least one of the image dimensions exceed max allowed size: 8000 pixels"}',
+                'provider_name' => 'Amazon Bedrock',
+            ],
+        ],
+    ]);
+    $exception = new RequestException($mockResponse);
+
+    expect(fn () => $this->provider->handleRequestException('test-model', $exception))
+        ->toThrow(
+            PrismException::class,
+            'OpenRouter Bad Request (Amazon Bedrock): messages.0.content.1.image.source.base64.data: At least one of the image dimensions exceed max allowed size: 8000 pixels'
+        );
+});
+
+it('includes provider_name in the message when no metadata.raw is present', function (): void {
+    $mockResponse = createMockResponse(400, [
+        'error' => [
+            'code' => 400,
+            'message' => 'Provider returned error',
+            'metadata' => [
+                'provider_name' => 'Together',
+            ],
+        ],
+    ]);
+    $exception = new RequestException($mockResponse);
+
+    expect(fn () => $this->provider->handleRequestException('test-model', $exception))
+        ->toThrow(PrismException::class, 'OpenRouter Bad Request (Together): Provider returned error');
 });
 
 it('falls back to error.message when metadata.raw is missing', function (): void {
@@ -190,18 +227,35 @@ it('falls back to error.message when metadata.raw has no error.message', functio
         ->toThrow(PrismException::class, 'OpenRouter Bad Request: Provider returned error');
 });
 
-it('falls back to error.message when metadata.raw contains invalid JSON', function (): void {
+it('attaches http status and raw response body to the exception on 400', function (): void {
+    $payload = ['error' => ['code' => 400, 'message' => 'Provider returned error']];
+    $mockResponse = createMockResponse(400, $payload);
+    $exception = new RequestException($mockResponse);
+
+    try {
+        $this->provider->handleRequestException('test-model', $exception);
+    } catch (PrismException $e) {
+        expect($e->httpStatus)->toBe(400);
+        expect($e->responseBody)->toContain('Provider returned error');
+
+        return;
+    }
+
+    $this->fail('Expected PrismException was not thrown');
+});
+
+it('uses metadata.raw as the message when it is a non-JSON string', function (): void {
     $mockResponse = createMockResponse(400, [
         'error' => [
             'code' => 400,
             'message' => 'Provider returned error',
             'metadata' => [
-                'raw' => 'not valid json',
+                'raw' => 'upstream service unavailable',
             ],
         ],
     ]);
     $exception = new RequestException($mockResponse);
 
     expect(fn () => $this->provider->handleRequestException('test-model', $exception))
-        ->toThrow(PrismException::class, 'OpenRouter Bad Request: Provider returned error');
+        ->toThrow(PrismException::class, 'OpenRouter Bad Request: upstream service unavailable');
 });

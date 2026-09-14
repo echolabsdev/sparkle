@@ -248,7 +248,7 @@ class DataProtocolAdapter
             'type' => 'tool-input-available',
             'toolCallId' => $event->toolCall->id,
             'toolName' => $event->toolCall->name,
-            'input' => $event->toolCall->arguments(),
+            'input' => $event->toolCall->argumentsAsObject(),
         ];
     }
 

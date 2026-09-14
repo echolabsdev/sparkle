@@ -7,12 +7,14 @@ namespace Prism\Prism\Structured;
 use Illuminate\Contracts\Support\Arrayable;
 use Prism\Prism\Contracts\Message;
 use Prism\Prism\Enums\FinishReason;
+use Prism\Prism\Support\JsonMap;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
 use Prism\Prism\ValueObjects\Messages\SystemMessage;
 use Prism\Prism\ValueObjects\Messages\ToolResultMessage;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\ProviderToolCall;
+use Prism\Prism\ValueObjects\ToolApprovalRequest;
 use Prism\Prism\ValueObjects\ToolCall;
 use Prism\Prism\ValueObjects\ToolResult;
 use Prism\Prism\ValueObjects\Usage;
@@ -31,6 +33,7 @@ readonly class Step implements Arrayable
      * @param  array<int, ProviderToolCall>  $providerToolCalls
      * @param  array<int, ToolResult>  $toolResults
      * @param  array<string,mixed>|null  $raw
+     * @param  ToolApprovalRequest[]  $toolApprovalRequests
      */
     public function __construct(
         public string $text,
@@ -44,7 +47,8 @@ readonly class Step implements Arrayable
         public array $toolCalls = [],
         public array $providerToolCalls = [],
         public array $toolResults = [],
-        public ?array $raw = null
+        public ?array $raw = null,
+        public array $toolApprovalRequests = []
     ) {}
 
     /**
@@ -60,8 +64,8 @@ readonly class Step implements Arrayable
             'meta' => $this->meta->toArray(),
             'messages' => array_map($this->messageToArray(...), $this->messages),
             'system_prompts' => array_map(fn (SystemMessage $systemMessage): array => $systemMessage->toArray(), $this->systemPrompts),
-            'additional_content' => $this->additionalContent,
-            'structured' => $this->structured,
+            'additional_content' => JsonMap::of($this->additionalContent),
+            'structured' => JsonMap::of($this->structured),
             'tool_calls' => array_map(fn (ToolCall $toolCall): array => $toolCall->toArray(), $this->toolCalls),
             'tool_results' => array_map(fn (ToolResult $toolResult): array => $toolResult->toArray(), $this->toolResults),
             'provider_tool_calls' => array_map(fn (ProviderToolCall $providerToolCall): array => $providerToolCall->toArray(), $this->providerToolCalls),

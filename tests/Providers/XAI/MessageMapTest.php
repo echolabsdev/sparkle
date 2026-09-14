@@ -13,7 +13,7 @@ use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\ToolCall;
 use Prism\Prism\ValueObjects\ToolResult;
 
-it('maps user messages', function (): void {
+it('maps user messages as plain string when no images', function (): void {
     $messageMap = new MessageMap(
         messages: [
             new UserMessage('Who are you?'),
@@ -23,9 +23,7 @@ it('maps user messages', function (): void {
 
     expect($messageMap())->toBe([[
         'role' => 'user',
-        'content' => [
-            ['type' => 'text', 'text' => 'Who are you?'],
-        ],
+        'content' => 'Who are you?',
     ]]);
 });
 
@@ -146,9 +144,7 @@ it('maps system prompt', function (): void {
         ],
         [
             'role' => 'user',
-            'content' => [
-                ['type' => 'text', 'text' => 'Who are you?'],
-            ],
+            'content' => 'Who are you?',
         ],
     ]);
 });

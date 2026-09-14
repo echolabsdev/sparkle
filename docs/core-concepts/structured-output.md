@@ -72,6 +72,32 @@ $response = Prism::structured()
     // ... rest of your configuration
 ```
 
+### Qwen: JSON Schema Mode
+Qwen supports two modes for structured output through DashScope's `response_format` parameter:
+
+- **JSON Object mode** (default): Ensures valid JSON output. Supported by most Qwen models.
+- **JSON Schema mode**: Strictly enforces the schema structure. Supported by `qwen3-max`, `qwen-plus`, `qwen-flash` series and later models.
+
+To use JSON Schema mode for strict schema validation:
+
+```php
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
+use Prism\Prism\Enums\StructuredMode;
+
+$response = Prism::structured()
+    ->using(Provider::Qwen, 'qwen-plus')
+    ->usingStructuredMode(StructuredMode::Structured)
+    ->withSchema($schema)
+    ->withPrompt('Extract user information')
+    ->asStructured();
+```
+
+> [!NOTE]
+> JSON Schema mode is only supported by newer models. If you use a model that does not support it, use the default JSON Object mode (or `StructuredMode::Auto`) instead. Check the [Qwen structured output documentation](https://www.alibabacloud.com/help/en/model-studio/qwen-structured-output) for the full list of supported models.
+
+### Anthropic: Tool Calling Mode
+Anthropic doesn't have native structured output, but Prism provides two approaches. For more reliable JSON parsing, especially with complex content or non-English text, use tool calling mode:
 ### Anthropic
 Anthropic uses native structured outputs by default (Claude Sonnet 4.5+), providing guaranteed schema compliance through constrained decoding. For older models, you can use tool calling mode as a fallback:
 

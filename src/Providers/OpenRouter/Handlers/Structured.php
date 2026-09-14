@@ -12,6 +12,7 @@ use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Exceptions\PrismStructuredDecodingException;
 use Prism\Prism\Providers\DeepSeek\Maps\ToolCallMap;
 use Prism\Prism\Providers\OpenRouter\Concerns\BuildsRequestOptions;
+use Prism\Prism\Providers\OpenRouter\Concerns\ExtractsReasoning;
 use Prism\Prism\Providers\OpenRouter\Concerns\MapsFinishReason;
 use Prism\Prism\Providers\OpenRouter\Concerns\ValidatesResponses;
 use Prism\Prism\Providers\OpenRouter\Maps\MessageMap;
@@ -29,6 +30,7 @@ class Structured
 {
     use BuildsRequestOptions;
     use CallsTools;
+    use ExtractsReasoning;
     use MapsFinishReason;
     use ValidatesResponses;
 
@@ -41,14 +43,15 @@ class Structured
 
     public function handle(Request $request): StructuredResponse
     {
+        $this->resolveToolApprovals($request);
+
         $data = $this->sendRequest($request);
 
         $this->validateResponse($data);
 
         return match ($this->mapFinishReason($data)) {
             FinishReason::ToolCalls => $this->handleToolCalls($data, $request),
-            FinishReason::Stop, FinishReason::Length => $this->handleStop($data, $request),
-            default => throw new PrismException('OpenRouter: unknown finish reason'),
+            default => $this->handleStop($data, $request),
         };
     }
 
@@ -99,19 +102,22 @@ class Structured
     {
         $toolCalls = ToolCallMap::map(data_get($data, 'choices.0.message.tool_calls', []));
 
-        $toolResults = $this->callTools($request->tools(), $toolCalls);
+        $hasPendingToolCalls = false;
+        $approvalRequests = [];
+        $toolResults = $this->callToolsWithPending($request->tools(), $toolCalls, $hasPendingToolCalls, $approvalRequests);
 
         $this->addStep($data, $request, $toolResults);
 
         $request = $request->addMessage(new AssistantMessage(
             data_get($data, 'choices.0.message.content') ?? '',
             $toolCalls,
-            []
+            $this->extractReasoning($data),
+            toolApprovalRequests: $approvalRequests,
         ));
         $request = $request->addMessage(new ToolResultMessage($toolResults));
         $request->resetToolChoice();
 
-        if ($this->shouldContinue($request)) {
+        if (! $hasPendingToolCalls && $this->shouldContinue($request)) {
             return $this->handle($request);
         }
 
@@ -154,8 +160,12 @@ class Structured
             text: data_get($data, 'choices.0.message.content') ?? '',
             finishReason: $this->mapFinishReason($data),
             usage: new Usage(
-                (int) data_get($data, 'usage.prompt_tokens', 0),
-                (int) data_get($data, 'usage.completion_tokens', 0),
+                promptTokens: max(0, (int) data_get($data, 'usage.prompt_tokens', 0) - (int) data_get($data, 'usage.prompt_tokens_details.cached_tokens', 0)),
+                completionTokens: (int) data_get($data, 'usage.completion_tokens', 0),
+                cacheWriteInputTokens: (int) data_get($data, 'usage.prompt_tokens_details.cache_write_tokens', 0) ?: null,
+                cacheReadInputTokens: (int) data_get($data, 'usage.prompt_tokens_details.cached_tokens', 0) ?: null,
+                thoughtTokens: $this->extractThoughtTokens($data),
+                cost: ($cost = data_get($data, 'usage.cost')) !== null ? (float) $cost : null,
             ),
             meta: new Meta(
                 id: data_get($data, 'id', ''),
@@ -163,7 +173,7 @@ class Structured
             ),
             messages: $request->messages(),
             systemPrompts: $request->systemPrompts(),
-            additionalContent: [],
+            additionalContent: $this->extractReasoning($data),
             toolCalls: ToolCallMap::map(data_get($data, 'choices.0.message.tool_calls', [])),
             providerToolCalls: [],
             toolResults: $toolResults,

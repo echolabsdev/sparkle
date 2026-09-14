@@ -129,8 +129,13 @@ it('can generate text using multiple tools and multiple steps', function (): voi
     expect($secondStep->messages[1]->toolCalls[1]->name)->toBe('weather');
     expect($secondStep->messages[2])->toBeInstanceOf(ToolResultMessage::class);
 
-    // Assert usage
-    expect($response->usage->promptTokens)->toBe(507);
+    // Assert usage. promptTokens is now the FRESH portion (prompt_tokens minus
+    // prompt_cache_hit_tokens) so cost trackers can apply the cached rate to the
+    // hit portion separately. Aggregated across both steps:
+    //   step 1 fixture: prompt_tokens=220, prompt_cache_hit_tokens=192 → fresh 28, cached 192
+    //   step 2 fixture: prompt_tokens=287, prompt_cache_hit_tokens=256 → fresh 31, cached 256
+    expect($response->usage->promptTokens)->toBe(59);
+    expect($response->usage->cacheReadInputTokens)->toBe(448);
     expect($response->usage->completionTokens)->toBe(76);
 
     // Assert response
@@ -144,4 +149,78 @@ it('can generate text using multiple tools and multiple steps', function (): voi
 
     // Assert finish reason
     expect($response->finishReason)->toBe(FinishReason::Stop);
+});
+
+// Upstream prism-php/prism#1032 by @leobeal (fixes prism-php/prism#1031): the
+// DeepSeek handlers dropped provider options entirely, so `thinking` could not
+// be disabled. Absorbed as a generic pass-through rather than upstream's
+// five-key allowlist, matching the Ollama handler — every DeepSeek knob is
+// forwarded, including ones DeepSeek adds later.
+it('forwards deepseek provider options into the request body', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/chat/completions', 'deepseek/generate-text-with-a-prompt');
+
+    Prism::text()
+        ->using(Provider::DeepSeek, 'deepseek-chat')
+        ->withProviderOptions([
+            'thinking' => ['type' => 'disabled'],
+            'reasoning_effort' => 'low',
+        ])
+        ->withPrompt('Who are you?')
+        ->asText();
+
+    Http::assertSent(function (Request $request): true {
+        expect($request->data()['thinking'])->toBe(['type' => 'disabled']);
+        expect($request->data()['reasoning_effort'])->toBe('low');
+
+        return true;
+    });
+});
+
+it('forwards a deepseek option the allowlist never knew about', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/chat/completions', 'deepseek/generate-text-with-a-prompt');
+
+    Prism::text()
+        ->using(Provider::DeepSeek, 'deepseek-chat')
+        ->withProviderOptions(['logprobs' => true, 'top_logprobs' => 5])
+        ->withPrompt('Who are you?')
+        ->asText();
+
+    Http::assertSent(function (Request $request): true {
+        expect($request->data()['logprobs'])->toBeTrue();
+        expect($request->data()['top_logprobs'])->toBe(5);
+
+        return true;
+    });
+});
+
+it('omits deepseek provider options that were not set', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/chat/completions', 'deepseek/generate-text-with-a-prompt');
+
+    Prism::text()
+        ->using(Provider::DeepSeek, 'deepseek-chat')
+        ->withPrompt('Who are you?')
+        ->asText();
+
+    Http::assertSent(function (Request $request): true {
+        expect($request->data())->not->toHaveKeys(['thinking', 'reasoning_effort', 'stop']);
+
+        return true;
+    });
+});
+
+it('does not let a provider option clobber model or messages', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/chat/completions', 'deepseek/generate-text-with-a-prompt');
+
+    Prism::text()
+        ->using(Provider::DeepSeek, 'deepseek-chat')
+        ->withProviderOptions(['model' => 'evil-model', 'messages' => []])
+        ->withPrompt('Who are you?')
+        ->asText();
+
+    Http::assertSent(function (Request $request): true {
+        expect($request->data()['model'])->toBe('deepseek-chat');
+        expect($request->data()['messages'])->not->toBe([]);
+
+        return true;
+    });
 });

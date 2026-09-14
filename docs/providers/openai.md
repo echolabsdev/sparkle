@@ -9,6 +9,47 @@
 ]
 ```
 
+### OpenAI-compatible endpoints
+
+`url` is not fixed to OpenAI. Point it at anything that speaks the OpenAI API
+and the provider works unchanged — a self-hosted runtime such as vLLM, LM Studio
+or llama.cpp, an Azure OpenAI deployment, or a gateway or proxy your team runs in
+front of several model vendors to centralise keys, quotas, and audit logging.
+
+Set the base URL and the key that endpoint expects:
+
+```env
+OPENAI_URL=https://your-endpoint.example.com/v1
+OPENAI_API_KEY=your-endpoint-key
+```
+
+Then use whichever model name that endpoint publishes. Nothing else in your
+application changes:
+
+```php
+$response = Prism::text()
+    ->using(Provider::OpenAI, 'the-model-name-your-endpoint-exposes')
+    ->withPrompt('Summarise the release risk for this change.')
+    ->asText();
+```
+
+Two things to expect when you do this:
+
+- **Feature parity varies.** "OpenAI-compatible" usually means chat completions.
+  Structured outputs, tool calling, streaming, embeddings, audio, and the
+  Responses API are each supported only if that endpoint implements them.
+  Prism sends the same request either way, so an unsupported feature surfaces as
+  an error from the endpoint rather than from Prism.
+- **Model names drive behaviour.** Prism infers some capabilities from the model
+  name — structured-output mode, for example, is resolved from the `gpt-` family
+  prefixes. An endpoint serving `llama-3.1-70b` under the OpenAI provider will
+  not be treated as structured-output capable.
+
+If the endpoint you are targeting already has a dedicated Prism provider —
+Groq, Mistral, DeepSeek, xAI, OpenRouter, Requesty, Qwen, Ollama, Azure — prefer
+that provider. Each one maps the quirks its API actually has, which the generic
+OpenAI provider will not do for you.
+
 ## Provider-specific options
 ### Strict Tool Schemas
 

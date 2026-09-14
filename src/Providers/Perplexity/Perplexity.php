@@ -16,7 +16,7 @@ use Prism\Prism\Text\Response as TextResponse;
 use SensitiveParameter;
 
 /**
- * @link https://docs.perplexity.ai/api-reference/chat-completions-post
+ * @link https://docs.perplexity.ai/docs/agent-api/quickstart
  * @link https://docs.perplexity.ai/guides/image-attachments
  * @link https://docs.perplexity.ai/guides/file-attachments
  */

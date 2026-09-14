@@ -6,6 +6,7 @@ namespace Tests\Providers\OpenAI;
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Prism\Prism\Enums\FinishReason;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Enums\StructuredMode;
 use Prism\Prism\Exceptions\PrismException;
@@ -642,7 +643,7 @@ it('includes status details when max tokens exceeded', function (): void {
     }
 });
 
-it('includes status details for unknown finish reasons', function (): void {
+it('handles unknown finish reasons gracefully', function (): void {
     FixtureResponse::fakeResponseSequence('v1/responses', 'openai/structured-unknown-finish-reason');
 
     $schema = new ObjectSchema(
@@ -654,10 +655,63 @@ it('includes status details for unknown finish reasons', function (): void {
         ['weather']
     );
 
-    expect(fn () => Prism::structured()
+    $response = Prism::structured()
         ->withSchema($schema)
         ->using(Provider::OpenAI, 'gpt-4o')
         ->withPrompt('What is the weather?')
-        ->asStructured()
-    )->toThrow(PrismException::class, 'some_future_type');
+        ->asStructured();
+
+    expect($response->finishReason)->toBe(FinishReason::Unknown);
+});
+
+it('passes text_verbosity through to the responses API', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/responses', 'openai/structured-structured-mode');
+
+    $schema = new ObjectSchema(
+        'output',
+        'the output object',
+        [new StringSchema('weather', 'The weather forecast')],
+        ['weather']
+    );
+
+    Prism::structured()
+        ->withSchema($schema)
+        ->using(Provider::OpenAI, 'gpt-5')
+        ->withPrompt('What is the weather?')
+        ->withProviderOptions(['text_verbosity' => 'low'])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): true {
+        $body = json_decode($request->body(), true);
+
+        expect(data_get($body, 'text.verbosity'))->toBe('low')
+            ->and(data_get($body, 'text.format'))->not->toBeNull();
+
+        return true;
+    });
+});
+
+it('omits text.verbosity when text_verbosity is not set', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/responses', 'openai/structured-structured-mode');
+
+    $schema = new ObjectSchema(
+        'output',
+        'the output object',
+        [new StringSchema('weather', 'The weather forecast')],
+        ['weather']
+    );
+
+    Prism::structured()
+        ->withSchema($schema)
+        ->using(Provider::OpenAI, 'gpt-5')
+        ->withPrompt('What is the weather?')
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): true {
+        $body = json_decode($request->body(), true);
+
+        expect(data_get($body, 'text'))->not->toHaveKey('verbosity');
+
+        return true;
+    });
 });

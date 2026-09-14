@@ -180,6 +180,28 @@ describe('Anthropic user message mapping', function (): void {
             ->toBe('text/plain');
     });
 
+    it('sends every text document as text/plain, which is the only text media type Anthropic accepts', function (string $mimeType): void {
+        // prism#49. A storage disk infers text/markdown, text/csv and so on from
+        // the extension, and Anthropic refused the whole request: "source.text.
+        // media_type: Input should be 'text/plain'". The content is sent as given.
+        $mappedMessage = MessageMap::map([
+            new UserMessage('Summarise the attached file.', [
+                Document::fromRawContent("# Brief\n\n- one\n- two\n", $mimeType, 'brief'),
+            ]),
+        ]);
+
+        expect(data_get($mappedMessage, '0.content.1.source'))->toBe([
+            'type' => 'text',
+            'media_type' => 'text/plain',
+            'data' => "# Brief\n\n- one\n- two\n",
+        ]);
+    })->with([
+        'markdown' => ['text/markdown'],
+        'csv' => ['text/csv'],
+        'html' => ['text/html'],
+        'plain with a charset' => ['text/plain; charset=utf-8'],
+    ]);
+
     it('maps user messages with txt documents from text string', function (): void {
         $mappedMessage = MessageMap::map([
             new UserMessage('Here is the document', [
@@ -226,7 +248,7 @@ describe('Anthropic assistant message mapping', function (): void {
                     ]
                 ),
             ]),
-        ]))->toBe([
+        ]))->toEqual([
             [
                 'role' => 'assistant',
                 'content' => [
@@ -238,7 +260,7 @@ describe('Anthropic assistant message mapping', function (): void {
                         'type' => 'tool_use',
                         'id' => 'tool_1234',
                         'name' => 'search',
-                        'input' => [
+                        'input' => (object) [
                             'query' => 'Laravel collection methods',
                         ],
                     ],

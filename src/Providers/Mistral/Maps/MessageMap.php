@@ -6,6 +6,7 @@ namespace Prism\Prism\Providers\Mistral\Maps;
 
 use Exception;
 use Prism\Prism\Contracts\Message;
+use Prism\Prism\Providers\Support\Payload;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
@@ -96,11 +97,11 @@ class MessageMap
             'type' => 'function',
             'function' => [
                 'name' => $toolCall->name,
-                'arguments' => json_encode($toolCall->arguments() ?: (object) []),
+                'arguments' => $toolCall->argumentsAsJson(),
             ],
         ], $message->toolCalls);
 
-        $this->mappedMessages[] = array_filter([
+        $this->mappedMessages[] = Payload::compact([
             'role' => 'assistant',
             'content' => $message->content,
             'tool_calls' => $toolCalls,

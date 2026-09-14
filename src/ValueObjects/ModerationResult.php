@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prism\Prism\ValueObjects;
 
 use Illuminate\Contracts\Support\Arrayable;
+use Prism\Prism\Support\JsonMap;
 
 /**
  * @implements Arrayable<string, mixed>
@@ -41,8 +42,8 @@ readonly class ModerationResult implements Arrayable
     {
         return [
             'flagged' => $this->flagged,
-            'categories' => $this->categories,
-            'category_scores' => $this->categoryScores,
+            'categories' => JsonMap::of($this->categories),
+            'category_scores' => JsonMap::of($this->categoryScores),
         ];
     }
 }

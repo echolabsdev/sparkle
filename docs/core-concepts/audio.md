@@ -81,8 +81,8 @@ use Prism\Prism\ValueObjects\Media\Audio;
 // From file path
 $audioFile = Audio::fromPath('/path/to/recording.wav');
 
-// From URL
-$audioFile = Audio::fromUrl('https://example.com/audio.mp3');
+// From a URL you trust — fetched explicitly, see below
+$audioFile = Audio::fromUrl('https://example.com/audio.mp3')->fetchUrlContent();
 
 // From base64 data
 $audioFile = Audio::fromBase64($base64AudioData, 'audio/wav');
@@ -95,6 +95,12 @@ $response = Prism::audio()
 // Access the transcription
 echo $response->text;
 ```
+
+::: warning URLs are not fetched automatically
+Audio built with `fromUrl()` has no bytes until you call `fetchUrlContent()`, which downloads the file from your server. Only call it on a URL you control or have validated. Never call it on a URL taken from user input — that lets anyone make your server request an address of their choosing, including internal services.
+
+For audio a user uploads, use `fromBase64()` or `fromLocalPath()` on the stored file instead.
+:::
 
 ## Working with Audio Files
 

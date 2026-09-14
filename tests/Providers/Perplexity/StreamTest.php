@@ -15,7 +15,7 @@ beforeEach(function (): void {
 });
 
 it('can generate text with a basic stream', function (): void {
-    FixtureResponse::fakeStreamResponses('chat/completions', 'perplexity/stream-basic-text');
+    FixtureResponse::fakeStreamResponses('v1/agent', 'perplexity/agent-stream-basic-text');
 
     $response = Prism::text()
         ->using(Provider::Perplexity, 'sonar')

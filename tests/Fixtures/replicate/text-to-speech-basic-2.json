@@ -1,0 +1,28 @@
+{
+    "id": "gxh7q2my95rgc0ct9g7tr2w9cr",
+    "model": "jaaari\/kokoro-82m",
+    "version": "f559560eb822dc509045f3921a1921234918b91739db4bf3daab2169b71c7a13",
+    "input": {
+        "text": "Hello world!",
+        "voice": "af_alloy"
+    },
+    "logs": "Processing text (12 chars) with voice='af_alloy' at speed=1.0\n",
+    "output": "https:\/\/replicate.delivery\/czjl\/BBTn3jvZMhIoJRGFDEVFH5NeuVnwPSJ6yCFNqB3y6wwla3yKA\/output.wav",
+    "data_removed": false,
+    "error": null,
+    "source": "api",
+    "status": "succeeded",
+    "created_at": "2025-11-03T23:31:23.337Z",
+    "started_at": "2025-11-03T23:31:23.352623999Z",
+    "completed_at": "2025-11-03T23:31:23.96356142Z",
+    "urls": {
+        "cancel": "https:\/\/api.replicate.com\/v1\/predictions\/gxh7q2my95rgc0ct9g7tr2w9cr\/cancel",
+        "get": "https:\/\/api.replicate.com\/v1\/predictions\/gxh7q2my95rgc0ct9g7tr2w9cr",
+        "stream": "https:\/\/stream.replicate.com\/v1\/files\/fddq-qrpzjxytfv2piya7jlz3jxfccosl5k5csjag73cue6cpphyvju6q",
+        "web": "https:\/\/replicate.com\/p\/gxh7q2my95rgc0ct9g7tr2w9cr"
+    },
+    "metrics": {
+        "predict_time": 0.610937454,
+        "total_time": 0.62656142
+    }
+}

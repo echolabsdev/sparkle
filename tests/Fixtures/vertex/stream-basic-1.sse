@@ -1,0 +1,8 @@
+data: {"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"},"finishReason":null}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":1,"totalTokenCount":11},"modelVersion":"gemini-1.5-flash"}
+
+data: {"candidates":[{"content":{"parts":[{"text":", I am"}],"role":"model"},"finishReason":null}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":3,"totalTokenCount":13},"modelVersion":"gemini-1.5-flash"}
+
+data: {"candidates":[{"content":{"parts":[{"text":" a helpful AI assistant."}],"role":"model"},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":8,"totalTokenCount":18},"modelVersion":"gemini-1.5-flash"}
+
+data: [DONE]
+

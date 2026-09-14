@@ -7,7 +7,6 @@ namespace Prism\Prism\Providers\OpenRouter;
 use Generator;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
-use JsonException;
 use Prism\Prism\Concerns\InitializesClient;
 use Prism\Prism\Embeddings\Request as EmbeddingRequest;
 use Prism\Prism\Embeddings\Response as EmbeddingResponse;
@@ -16,6 +15,7 @@ use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Exceptions\PrismProviderOverloadedException;
 use Prism\Prism\Exceptions\PrismRateLimitedException;
 use Prism\Prism\Exceptions\PrismRequestTooLargeException;
+use Prism\Prism\Providers\OpenRouter\Concerns\ExtractsErrorDetails;
 use Prism\Prism\Providers\OpenRouter\Handlers\Embeddings;
 use Prism\Prism\Providers\OpenRouter\Handlers\Stream;
 use Prism\Prism\Providers\OpenRouter\Handlers\Structured;
@@ -28,6 +28,7 @@ use Prism\Prism\Text\Response as TextResponse;
 
 class OpenRouter extends Provider
 {
+    use ExtractsErrorDetails;
     use InitializesClient;
 
     public function __construct(
@@ -84,37 +85,39 @@ class OpenRouter extends Provider
     public function handleRequestException(string $model, RequestException $e): never
     {
         $statusCode = $e->response->getStatusCode();
+        $responseBody = (string) $e->response->body();
         $responseData = $e->response->json();
 
-        $rawMetadata = data_get($responseData, 'error.metadata.raw');
-
-        try {
-            $jsonMetadata = $rawMetadata ? json_decode((string) $rawMetadata, true, 512, JSON_THROW_ON_ERROR) : [];
-        } catch (JsonException) {
-            $jsonMetadata = [];
-        }
-
-        $errorMessage = data_get($jsonMetadata, 'error.message');
-
-        if (! $errorMessage) {
-            $errorMessage = data_get($responseData, 'error.message', 'Unknown error');
-        }
+        $errorData = data_get($responseData, 'error', []);
+        $details = $this->extractErrorDetails(is_array($errorData) ? $errorData : []);
+        $errorMessage = $details['message'];
+        $providerLabel = $this->formatProviderLabel($details['providerName']);
 
         match ($statusCode) {
             400 => throw PrismException::providerResponseError(
-                sprintf('OpenRouter Bad Request: %s', $errorMessage)
+                sprintf('OpenRouter Bad Request%s: %s', $providerLabel, $errorMessage),
+                $statusCode,
+                $responseBody,
             ),
             401 => throw PrismException::providerResponseError(
-                sprintf('OpenRouter Authentication Error: %s', $errorMessage)
+                sprintf('OpenRouter Authentication Error%s: %s', $providerLabel, $errorMessage),
+                $statusCode,
+                $responseBody,
             ),
             402 => throw PrismException::providerResponseError(
-                sprintf('OpenRouter Insufficient Credits: %s', $errorMessage)
+                sprintf('OpenRouter Insufficient Credits%s: %s', $providerLabel, $errorMessage),
+                $statusCode,
+                $responseBody,
             ),
             403 => throw PrismException::providerResponseError(
-                sprintf('OpenRouter Moderation Error: %s', $errorMessage)
+                sprintf('OpenRouter Moderation Error%s: %s', $providerLabel, $errorMessage),
+                $statusCode,
+                $responseBody,
             ),
             408 => throw PrismException::providerResponseError(
-                sprintf('OpenRouter Request Timeout: %s', $errorMessage)
+                sprintf('OpenRouter Request Timeout%s: %s', $providerLabel, $errorMessage),
+                $statusCode,
+                $responseBody,
             ),
             413 => throw PrismRequestTooLargeException::make(ProviderName::OpenRouter),
             429 => throw PrismRateLimitedException::make(
@@ -124,7 +127,9 @@ class OpenRouter extends Provider
                     : null
             ),
             502 => throw PrismException::providerResponseError(
-                sprintf('OpenRouter Model Error: %s', $errorMessage)
+                sprintf('OpenRouter Model Error%s: %s', $providerLabel, $errorMessage),
+                $statusCode,
+                $responseBody,
             ),
             503 => throw PrismProviderOverloadedException::make(ProviderName::OpenRouter),
             default => throw PrismException::providerRequestError($model, $e),

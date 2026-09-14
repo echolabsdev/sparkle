@@ -17,6 +17,7 @@ enum StreamEventType: string
     case ToolCallDelta = 'tool_call_delta';
     case ProviderToolEvent = 'provider_tool_event';
     case ToolResult = 'tool_result';
+    case ToolApprovalRequest = 'tool_approval_request';
     case Citation = 'citation';
     case Artifact = 'artifact';
     case Error = 'error';

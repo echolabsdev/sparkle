@@ -43,6 +43,8 @@ class Embeddings
 
     protected function sendRequest(Request $request): Response
     {
+        $options = Arr::except($request->providerOptions(), ['dimensions', 'keep_alive']);
+
         /** @var Response $response */
         $response = $this->client->post(
             'api/embed',
@@ -51,7 +53,7 @@ class Embeddings
                 'input' => $request->inputs(),
                 'dimensions' => $request->providerOptions('dimensions'),
                 'keep_alive' => $request->providerOptions('keep_alive'),
-                'options' => $request->providerOptions() ?: null,
+                'options' => $options ?: null,
             ])
         );
 

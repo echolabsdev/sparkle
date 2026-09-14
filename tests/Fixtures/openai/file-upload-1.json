@@ -1,0 +1,11 @@
+{
+  "object": "file",
+  "id": "file-DC8kDtzu39Q9PnLWRLVmLN",
+  "purpose": "user_data",
+  "filename": "data.txt",
+  "bytes": 17,
+  "created_at": 1773582617,
+  "expires_at": null,
+  "status": "processed",
+  "status_details": null
+}

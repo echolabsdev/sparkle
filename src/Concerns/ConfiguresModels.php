@@ -12,6 +12,8 @@ trait ConfiguresModels
 
     protected int|float|null $topP = null;
 
+    protected ?int $topK = null;
+
     public function withMaxTokens(?int $maxTokens): self
     {
         $this->maxTokens = $maxTokens;
@@ -29,6 +31,13 @@ trait ConfiguresModels
     public function usingTopP(int|float $topP): self
     {
         $this->topP = $topP;
+
+        return $this;
+    }
+
+    public function usingTopK(int $topK): self
+    {
+        $this->topK = $topK;
 
         return $this;
     }

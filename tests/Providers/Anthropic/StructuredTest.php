@@ -96,7 +96,80 @@ it('adds rate limit data to the responseMeta', function (): void {
     expect($response->meta->rateLimits[0]->resetsAt)->toEqual($requests_reset);
 });
 
-it('can use extending thinking', function (): void {
+it('can use adaptive thinking', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured-with-extending-thinking');
+
+    $response = Prism::structured()
+        ->using('anthropic', 'claude-sonnet-4-6')
+        ->withSchema(new ObjectSchema('output', 'the output object', [new StringSchema('text', 'the output text')], ['text']))
+        ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
+        ->withProviderOptions(['thinking' => ['type' => 'adaptive']])
+        ->asStructured();
+
+    expect($response->structured['text'])->toContain('Douglas Adams');
+    expect($response->additionalContent['thinking'])->toContain('meaning of life');
+    expect($response->additionalContent)->toHaveKey('thinking_signature');
+});
+
+it('works with adaptive thinking when use_tool_calling is true', function (): void {
+    FixtureResponse::fakeResponseSequence(
+        'v1/messages',
+        'anthropic/structured-with-use-tool-calling'
+    );
+
+    $schema = new ObjectSchema('output', 'the output object', [
+        new StringSchema('answer', 'The answer about life, universe and everything'),
+    ], ['answer']);
+
+    $response = Prism::structured()
+        ->withSchema($schema)
+        ->using(Provider::Anthropic, 'claude-sonnet-4-6')
+        ->withSystemPrompt('You are a helpful assistant.')
+        ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
+        ->withProviderOptions(['thinking' => ['type' => 'adaptive'], 'use_tool_calling' => true])
+        ->asStructured();
+
+    expect($response->structured)->toBeArray();
+    expect($response->structured)->toHaveKey('answer');
+    expect($response->structured['answer'])->toBeString();
+
+    expect($response->additionalContent)->toHaveKey('thinking');
+    expect($response->additionalContent['thinking'])->toBeString();
+    expect($response->additionalContent['thinking_signature'])->toBeString();
+});
+
+it('merges effort with output_config.format in the request payload', function (): void {
+    Prism::fake();
+
+    $schema = new ObjectSchema(
+        'output',
+        'the output object',
+        [
+            new StringSchema('weather', 'The weather forecast'),
+            new BooleanSchema('coat_required', 'whether a coat is required'),
+        ],
+        ['weather', 'coat_required']
+    );
+
+    $request = Prism::structured()
+        ->withSchema($schema)
+        ->using(Provider::Anthropic, 'claude-sonnet-4-6')
+        ->withPrompt('What is the weather?')
+        ->withProviderOptions(['effort' => 'high']);
+
+    $payload = Structured::buildHttpRequestPayload($request->toRequest());
+
+    expect($payload)->toHaveKey('output_config');
+    expect($payload['output_config'])->toBe([
+        'effort' => 'high',
+        'format' => [
+            'type' => 'json_schema',
+            'schema' => $schema->toArray(),
+        ],
+    ]);
+});
+
+it('can use legacy extended thinking', function (): void {
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured-with-extending-thinking');
 
     $response = Prism::structured()
@@ -131,7 +204,7 @@ it('throws error when citations and tool calling are used together', function ()
     )->toThrow(PrismException::class, 'Citations are not supported with tool calling mode');
 });
 
-it('works with thinking mode when use_tool_calling is true', function (): void {
+it('works with legacy thinking mode when use_tool_calling is true', function (): void {
     FixtureResponse::fakeResponseSequence(
         'v1/messages',
         'anthropic/structured-with-use-tool-calling'

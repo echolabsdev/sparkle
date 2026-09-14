@@ -1,0 +1,135 @@
+id:1
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":""},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":1,"total_tokens":13},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:2
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"Hello"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":2,"total_tokens":14},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:3
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"! I'm"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":3,"total_tokens":15},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:4
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" Qwen,"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":4,"total_tokens":16},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:5
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" a large-scale"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":5,"total_tokens":17},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:6
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" language model developed by Tongyi"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":6,"total_tokens":18},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:7
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" Lab. I'm"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":7,"total_tokens":19},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:8
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" designed to assist with"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":8,"total_tokens":20},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:9
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" a wide range of tasks—"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":9,"total_tokens":21},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:10
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"such as answering questions, writing"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":10,"total_tokens":22},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:11
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" stories, creating documents"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":11,"total_tokens":23},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:12
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":", composing emails, scripting"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":12,"total_tokens":24},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:13
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":", logical reasoning, coding"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":13,"total_tokens":25},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:14
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":", and more."},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":14,"total_tokens":26},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:15
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" I can also express opinions"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":15,"total_tokens":27},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:16
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" and play games. My"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":16,"total_tokens":28},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:17
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" knowledge spans many fields, and"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":17,"total_tokens":29},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:18
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" I support multiple languages.\n\n"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":18,"total_tokens":30},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:19
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"I’m here to help—"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":19,"total_tokens":31},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:20
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"whether you're looking"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":20,"total_tokens":32},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:21
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" for information, creative"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":21,"total_tokens":33},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:22
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" inspiration, problem-solving, or"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":22,"total_tokens":34},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:23
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" just want to chat!"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":23,"total_tokens":35},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:24
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" 😊  \nFeel"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":24,"total_tokens":36},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:25
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":" free to ask me anything"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":25,"total_tokens":37},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:26
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"!"},"finish_reason":"null"}]},"usage":{"input_tokens":12,"output_tokens":26,"total_tokens":38},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+
+id:27
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":""},"finish_reason":"stop"}]},"usage":{"input_tokens":12,"output_tokens":27,"total_tokens":39},"request_id":"b0ad855a-cc5f-9ad1-9ff1-8d074d32fde9"}
+

@@ -59,6 +59,8 @@ class Stream
      */
     public function handle(Request $request): Generator
     {
+        yield from $this->resolveToolApprovalsAndYieldEvents($request, EventID::generate());
+
         $response = $this->sendRequest($request);
 
         yield from $this->processStream($response, $request);
@@ -321,7 +323,17 @@ class Stream
         }
 
         $toolResults = [];
-        yield from $this->callToolsAndYieldEvents($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults);
+        $hasPendingToolCalls = false;
+        yield from $this->callToolsAndYieldEventsWithPending($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults, $hasPendingToolCalls);
+
+        if ($hasPendingToolCalls) {
+            // Client-executed or approval-required tool calls: end the stream
+            // with FinishReason::ToolCalls so the consumer resolves and resumes.
+            $this->state->markStepFinished();
+            yield from $this->yieldToolCallsFinishEvents($this->state);
+
+            return;
+        }
 
         $this->state->markStepFinished();
         yield new StepFinishEvent(
@@ -406,6 +418,7 @@ class Stream
                 ], Arr::whereNotNull([
                     'temperature' => $request->temperature(),
                     'top_p' => $request->topP(),
+                    'reasoning_effort' => $request->providerOptions('reasoning_effort'),
                     'tools' => ToolMap::map($request->tools()),
                     'tool_choice' => ToolChoiceMap::map($request->toolChoice()),
                 ]))

@@ -1,0 +1,20 @@
+id:1
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"","tool_calls":[{"index":0,"id":"call_39df66a2f91b49e5a59f1b","type":"function","function":{"name":"get_weather","arguments":""}}]},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":1,"total_tokens":101},"request_id":"baa35a30-5e25-9f50-a147-dc3a32add522"}
+
+id:2
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"","tool_calls":[{"index":0,"id":"call_39df66a2f91b49e5a59f1b","type":"function","function":{"name":"","arguments":"{\"city\": \""}}]},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":2,"total_tokens":102},"request_id":"baa35a30-5e25-9f50-a147-dc3a32add522"}
+
+id:3
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant","content":"","tool_calls":[{"function":{"arguments":"Detroit\"}"},"index":0,"id":"","type":"function"}]},"finish_reason":"null"}]},"usage":{"input_tokens":100,"output_tokens":3,"total_tokens":103},"request_id":"baa35a30-5e25-9f50-a147-dc3a32add522"}
+
+id:4
+event:result
+:HTTP_STATUS/200
+data:{"output":{"choices":[{"message":{"role":"assistant"},"finish_reason":"tool_calls"}]},"usage":{"input_tokens":100,"output_tokens":4,"total_tokens":104},"request_id":"baa35a30-5e25-9f50-a147-dc3a32add522"}
+

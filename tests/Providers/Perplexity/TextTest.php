@@ -11,7 +11,7 @@ beforeEach(function (): void {
 });
 
 it('generates text with a prompt', function (): void {
-    FixtureResponse::fakeResponseSequence('chat/completions', 'perplexity/generate-text-with-a-prompt');
+    FixtureResponse::fakeResponseSequence('v1/agent', 'perplexity/agent-text-with-a-prompt');
 
     $response = Prism::text()
         ->using(Provider::Perplexity, 'sonar')

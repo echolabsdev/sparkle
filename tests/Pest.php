@@ -22,7 +22,9 @@ uses()->group('groq')->in('Providers/Groq');
 uses()->group('mistral')->in('Providers/Mistral');
 uses()->group('ollama')->in('Providers/Ollama');
 uses()->group('openai')->in('Providers/OpenAI');
+uses()->group('replicate')->in('Providers/Replicate');
 uses()->group('xai')->in('Providers/XAI');
+uses()->group('qwen')->in('Providers/Qwen');
 
 /*
 |--------------------------------------------------------------------------

@@ -6,6 +6,7 @@ namespace Prism\Prism\Providers\OpenAI\Concerns;
 
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
+use Prism\Prism\Support\HeaderNames;
 use Prism\Prism\ValueObjects\ProviderRateLimit;
 
 trait ProcessRateLimits
@@ -15,7 +16,12 @@ trait ProcessRateLimits
      */
     protected function processRateLimits(Response $response): array
     {
-        $headers = $response->getHeaders();
+        // `getHeaders()` keeps the case the wire carried, and these lookups are
+        // exact array keys. HTTP field names are case-insensitive (RFC 9110
+        // 5.1), so a gateway that title-cases them used to make every lookup
+        // below miss and this method return an empty list -- indistinguishable
+        // from a response that carried no quota headers at all.
+        $headers = HeaderNames::folded($response->getHeaders());
         $rateLimits = [];
 
         // Process requests rate limit

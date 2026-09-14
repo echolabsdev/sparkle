@@ -9,7 +9,6 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Prism\Prism\Concerns\CallsTools;
 use Prism\Prism\Enums\FinishReason;
-use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Providers\DeepSeek\Concerns\MapsFinishReason;
 use Prism\Prism\Providers\DeepSeek\Concerns\ValidatesResponses;
 use Prism\Prism\Providers\DeepSeek\Maps\MessageMap;
@@ -41,14 +40,15 @@ class Text
 
     public function handle(Request $request): TextResponse
     {
+        $this->resolveToolApprovals($request);
+
         $data = $this->sendRequest($request);
 
         $this->validateResponse($data);
 
         return match ($this->mapFinishReason($data)) {
             FinishReason::ToolCalls => $this->handleToolCalls($data, $request),
-            FinishReason::Stop => $this->handleStop($data, $request),
-            default => throw new PrismException('DeepSeek: unknown finish reason'),
+            default => $this->handleStop($data, $request),
         };
     }
 
@@ -59,19 +59,25 @@ class Text
     {
         $toolCalls = ToolCallMap::map(data_get($data, 'choices.0.message.tool_calls', []));
 
-        $toolResults = $this->callTools($request->tools(), $toolCalls);
+        $hasPendingToolCalls = false;
+        $approvalRequests = [];
+        $toolResults = $this->callToolsWithPending($request->tools(), $toolCalls, $hasPendingToolCalls, $approvalRequests);
 
         $this->addStep($data, $request, $toolResults);
+
+        $reasoningContent = data_get($data, 'choices.0.message.reasoning_content');
+        $additionalContent = $reasoningContent ? ['reasoning_content' => $reasoningContent] : [];
 
         $request = $request->addMessage(new AssistantMessage(
             data_get($data, 'choices.0.message.content') ?? '',
             $toolCalls,
-            []
+            $additionalContent,
+            toolApprovalRequests: $approvalRequests,
         ));
         $request = $request->addMessage(new ToolResultMessage($toolResults));
         $request->resetToolChoice();
 
-        if ($this->shouldContinue($request)) {
+        if (! $hasPendingToolCalls && $this->shouldContinue($request)) {
             return $this->handle($request);
         }
 
@@ -101,16 +107,23 @@ class Text
         /** @var Response $response */
         $response = $this->client->post(
             'chat/completions',
-            array_merge([
-                'model' => $request->model(),
-                'messages' => (new MessageMap($request->messages(), $request->systemPrompts()))(),
-                'max_tokens' => $request->maxTokens(),
-            ], Arr::whereNotNull([
-                'temperature' => $request->temperature(),
-                'top_p' => $request->topP(),
-                'tools' => ToolMap::map($request->tools()) ?: null,
-                'tool_choice' => ToolChoiceMap::map($request->toolChoice()),
-            ]))
+            array_merge(
+                // DeepSeek-specific knobs — 'thinking' => ['type' => 'disabled'],
+                // 'reasoning_effort', 'stop', the penalties, and anything DeepSeek
+                // adds later. Merged first so the explicit request settings below
+                // always win and a stray option cannot clobber model or messages.
+                $request->providerOptions(),
+                [
+                    'model' => $request->model(),
+                    'messages' => (new MessageMap($request->messages(), $request->systemPrompts()))(),
+                    'max_tokens' => $request->maxTokens(),
+                ], Arr::whereNotNull([
+                    'temperature' => $request->temperature(),
+                    'top_p' => $request->topP(),
+                    'tools' => ToolMap::map($request->tools()) ?: null,
+                    'tool_choice' => ToolChoiceMap::map($request->toolChoice()),
+                ])
+            )
         );
 
         return $response->json();
@@ -122,6 +135,11 @@ class Text
      */
     protected function addStep(array $data, Request $request, array $toolResults = []): void
     {
+        $totalPrompt = (int) (data_get($data, 'usage.prompt_tokens') ?? 0);
+        $cacheHit = (int) (data_get($data, 'usage.prompt_cache_hit_tokens') ?? 0);
+        $reasoning = (int) (data_get($data, 'usage.completion_tokens_details.reasoning_tokens') ?? 0);
+        $reasoningContent = data_get($data, 'choices.0.message.reasoning_content');
+
         $this->responseBuilder->addStep(new Step(
             text: data_get($data, 'choices.0.message.content') ?? '',
             finishReason: $this->mapFinishReason($data),
@@ -129,8 +147,10 @@ class Text
             toolResults: $toolResults,
             providerToolCalls: [],
             usage: new Usage(
-                data_get($data, 'usage.prompt_tokens'),
-                data_get($data, 'usage.completion_tokens'),
+                promptTokens: max(0, $totalPrompt - $cacheHit),
+                completionTokens: (int) (data_get($data, 'usage.completion_tokens') ?? 0),
+                cacheReadInputTokens: $cacheHit > 0 ? $cacheHit : null,
+                thoughtTokens: $reasoning > 0 ? $reasoning : null,
             ),
             meta: new Meta(
                 id: data_get($data, 'id'),
@@ -138,7 +158,7 @@ class Text
             ),
             messages: $request->messages(),
             systemPrompts: $request->systemPrompts(),
-            additionalContent: [],
+            additionalContent: $reasoningContent ? ['reasoning_content' => $reasoningContent] : [],
             raw: $data,
         ));
     }

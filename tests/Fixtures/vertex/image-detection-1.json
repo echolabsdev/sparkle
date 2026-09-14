@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "That's an illustration of a **diamond**. More specifically, it's a stylized, geometric representation of a diamond, often used as an icon or symbol"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "avgLogprobs": -0.11
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 263,
+    "candidatesTokenCount": 35,
+    "totalTokenCount": 298
+  },
+  "modelVersion": "gemini-1.5-flash"
+}

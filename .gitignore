@@ -10,7 +10,6 @@ phpunit.xml
 *.code-workspace
 .vscode
 ray.php
-CLAUDE.md
 .phpunit.result.cache
 .ddev/
 .claude/

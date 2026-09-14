@@ -189,7 +189,7 @@ it('supports AnyOfSchema in structured output', function (): void {
     expect($response->structured['value'])->toBe('forty-two');
 
     Http::assertSent(function (Request $request): bool {
-        $schema = $request->data()['generationConfig']['response_schema'];
+        $schema = $request->data()['generationConfig']['response_json_schema'];
 
         expect($schema)->toHaveKey('properties');
         expect($schema['properties'])->toHaveKey('value');
@@ -256,14 +256,14 @@ it('supports AnyOfSchema with complex objects', function (): void {
     expect($response->structured['content']['title'])->toBe('Understanding AI');
 
     Http::assertSent(function (Request $request): bool {
-        $schema = $request->data()['generationConfig']['response_schema'];
+        $schema = $request->data()['generationConfig']['response_json_schema'];
         $anyOf = $schema['properties']['content']['anyOf'];
 
         expect($anyOf)->toHaveCount(2);
 
         foreach ($anyOf as $nestedSchema) {
             expect($nestedSchema)->not->toHaveKey('name');
-            expect($nestedSchema)->not->toHaveKey('additionalProperties');
+            expect($nestedSchema['additionalProperties'])->toBeFalse();
             expect($nestedSchema)->toHaveKey('type');
             expect($nestedSchema['type'])->toBe('object');
             expect($nestedSchema)->toHaveKey('properties');
@@ -311,7 +311,7 @@ it('supports NumberSchema constraints in structured output', function (): void {
     expect($response->structured['score'])->toBeLessThanOrEqual(5.0);
 
     Http::assertSent(function (Request $request): bool {
-        $schema = $request->data()['generationConfig']['response_schema'];
+        $schema = $request->data()['generationConfig']['response_json_schema'];
 
         expect($schema['properties'])->toHaveKey('score');
         expect($schema['properties']['score'])->toHaveKey('minimum');
@@ -355,7 +355,7 @@ it('supports nullable AnyOfSchema in structured output', function (): void {
     expect($response->structured['value'])->toBeNull();
 
     Http::assertSent(function (Request $request): bool {
-        $schema = $request->data()['generationConfig']['response_schema'];
+        $schema = $request->data()['generationConfig']['response_json_schema'];
         $anyOf = $schema['properties']['value']['anyOf'];
 
         expect($anyOf)->toHaveCount(3);
@@ -403,4 +403,62 @@ it('filters out thought parts when includeThoughts is true', function (): void {
     expect($response->steps[0]->additionalContent)->toHaveKey('thoughtSummaries');
     expect($response->steps[0]->additionalContent['thoughtSummaries'])->toBeArray();
     expect($response->steps[0]->additionalContent['thoughtSummaries'][0])->toContain('Let me think about');
+});
+
+it('sends topK in generationConfig for structured output', function (): void {
+    FixtureResponse::fakeResponseSequence('*', 'gemini/generate-structured');
+
+    Prism::structured()
+        ->using(Provider::Gemini, 'gemini-1.5-flash-002')
+        ->withSchema(new ObjectSchema(
+            'output',
+            'the output object',
+            [
+                new StringSchema('weather', 'The weather forecast'),
+                new BooleanSchema('coat_required', 'whether a coat is required'),
+            ],
+            ['weather', 'coat_required'],
+        ))
+        ->withPrompt('What time is the tigers game today and should I wear a coat?')
+        ->usingTopK(40)
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): true {
+        $data = $request->data();
+
+        expect($data['generationConfig'])
+            ->toHaveKey('topK')
+            ->and($data['generationConfig']['topK'])->toBe(40);
+
+        return true;
+    });
+});
+
+it('passes service_tier in the request body for structured output', function (): void {
+    FixtureResponse::fakeResponseSequence('*', 'gemini/generate-structured');
+
+    $schema = new ObjectSchema(
+        'output',
+        'the output object',
+        [
+            new StringSchema('weather', 'The weather forecast'),
+        ],
+        ['weather']
+    );
+
+    Prism::structured()
+        ->using(Provider::Gemini, 'gemini-2.5-flash')
+        ->withSchema($schema)
+        ->withPrompt('What is the weather?')
+        ->withProviderOptions(['serviceTier' => 'flex'])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): true {
+        $data = $request->data();
+
+        expect($data)->toHaveKey('service_tier')
+            ->and($data['service_tier'])->toBe('flex');
+
+        return true;
+    });
 });

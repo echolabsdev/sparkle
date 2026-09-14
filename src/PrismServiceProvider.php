@@ -4,6 +4,8 @@ namespace Prism\Prism;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Prism\Prism\Console\Commands\MakeToolCommand;
+use Prism\Prism\Telemetry\ContextStack;
 
 class PrismServiceProvider extends ServiceProvider
 {
@@ -12,6 +14,16 @@ class PrismServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/prism.php' => config_path('prism.php'),
         ], 'prism-config');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                MakeToolCommand::class,
+            ]);
+
+            $this->publishes([
+                __DIR__.'/../stubs/prism-tool.stub' => base_path('stubs/prism-tool.stub'),
+            ], 'prism-stubs');
+        }
 
         if (config('prism.prism_server.enabled')) {
             Route::group([
@@ -48,5 +60,7 @@ class PrismServiceProvider extends ServiceProvider
             'prism-server',
             fn (): PrismServer => new PrismServer
         );
+
+        $this->app->singleton(ContextStack::class);
     }
 }

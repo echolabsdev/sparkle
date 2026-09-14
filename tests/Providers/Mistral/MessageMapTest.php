@@ -209,4 +209,4 @@ it('throws an exception for a non-url document', function (): void {
     );
 
     $messageMap();
-})->throws(PrismException::class, "The mistral provider does not support the mediums available in the provided `Prism\Prism\Providers\Mistral\Maps\DocumentMapper`. Pleae consult the Prism documentation for more information on which mediums the mistral provider supports.");
+})->throws(PrismException::class, "The mistral provider does not support the mediums available in the provided `Prism\Prism\Providers\Mistral\Maps\DocumentMapper`. Please consult the Prism documentation for more information on which mediums the mistral provider supports.");

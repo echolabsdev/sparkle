@@ -31,6 +31,10 @@ trait BuildsRequestOptions
             'tool_choice' => ToolChoiceMap::map($request->toolChoice()),
         ]));
 
+        if ($request->reasoningEnabled() === false && ! isset($options['reasoning'])) {
+            $options['reasoning'] = ['exclude' => true];
+        }
+
         return Arr::whereNotNull(array_merge($options, $additional));
     }
 }

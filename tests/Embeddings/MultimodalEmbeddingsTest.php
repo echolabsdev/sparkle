@@ -7,7 +7,6 @@ namespace Tests\Embeddings;
 use Prism\Prism\Embeddings\Content;
 use Prism\Prism\Embeddings\PendingRequest;
 use Prism\Prism\Embeddings\Request;
-use Prism\Prism\Embeddings\Response;
 use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Document;
@@ -70,6 +69,6 @@ it('supports multiple grouped multimodal content entries', function () use ($tes
 it('throws exception when no embeddings content is provided', function (): void {
     $pendingRequest = new PendingRequest;
 
-    expect(fn (): Response => $pendingRequest->asEmbeddings())
+    expect($pendingRequest->asEmbeddings(...))
         ->toThrow(PrismException::class, 'Embeddings input is required (text, images, audio, video, documents, or content parts)');
 });

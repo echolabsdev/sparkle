@@ -203,7 +203,6 @@ file_put_contents('analysis_reasoning.txt', $reasoning);
 
 ```php
 use Prism\Prism\Schema\ArraySchema;
-use Prism\Prism\Schema\IntegerSchema;
 use Prism\Prism\Schema\NumberSchema;
 
 $schema = new ObjectSchema(
@@ -218,7 +217,7 @@ $schema = new ObjectSchema(
         ),
         new ObjectSchema('risk_assessment', 'Risk analysis', [
             new StringSchema('level', 'Risk level (low/medium/high)'),
-            new IntegerSchema('score', 'Risk score from 1-10'),
+            new NumberSchema('score', 'Risk score from 1-10'),
         ], ['level', 'score']),
     ],
     ['summary', 'total_revenue', 'profit_margin', 'recommendations', 'risk_assessment']

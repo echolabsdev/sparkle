@@ -92,6 +92,19 @@ test('it generates a proper request object', function (): void {
         ->and($request->providerOptions())->toBe($providerOptions);
 });
 
+test('it sets top k', function (): void {
+    $schema = new StringSchema('test', 'test description');
+
+    $request = $this->pendingRequest
+        ->using(Provider::OpenAI, 'gpt-4')
+        ->withSchema($schema)
+        ->withPrompt('Test prompt')
+        ->usingTopK(40)
+        ->toRequest();
+
+    expect($request->topK())->toBe(40);
+});
+
 test('you can run toRequest multiple times', function (): void {
     $request = $this->pendingRequest
         ->using(Provider::OpenAI, 'gpt-4')

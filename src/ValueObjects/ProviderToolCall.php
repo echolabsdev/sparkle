@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prism\Prism\ValueObjects;
 
 use Illuminate\Contracts\Support\Arrayable;
+use Prism\Prism\Support\JsonMap;
 
 /**
  * @implements Arrayable<string, mixed>
@@ -31,7 +32,7 @@ readonly class ProviderToolCall implements Arrayable
             'id' => $this->id,
             'type' => $this->type,
             'status' => $this->status,
-            'data' => $this->data,
+            'data' => JsonMap::of($this->data),
         ];
     }
 }

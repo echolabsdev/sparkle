@@ -8,6 +8,8 @@ use Prism\Prism\Exceptions\PrismException;
 
 trait ValidatesResponses
 {
+    use ExtractsErrorDetails;
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -27,23 +29,28 @@ trait ValidatesResponses
      */
     protected function handleOpenRouterError(array $data): void
     {
-        $error = data_get($data, 'error', []);
-        $code = data_get($error, 'code', 'unknown');
-        $message = data_get($error, 'message', 'Unknown error');
-        $metadata = data_get($error, 'metadata', []);
+        $errorData = data_get($data, 'error', []);
+        $errorData = is_array($errorData) ? $errorData : [];
+
+        $code = data_get($errorData, 'code', 'unknown');
+        $metadata = data_get($errorData, 'metadata', []);
+        $details = $this->extractErrorDetails($errorData);
+        $message = $details['message'];
+        $providerLabel = $this->formatProviderLabel($details['providerName']);
 
         if ($code === 403 && isset($metadata['reasons'])) {
             throw PrismException::providerResponseError(sprintf(
-                'OpenRouter Moderation Error: %s. Flagged input: %s',
+                'OpenRouter Moderation Error%s: %s. Flagged input: %s',
+                $providerLabel,
                 $message,
                 data_get($metadata, 'flagged_input', 'N/A')
             ));
         }
 
-        if (isset($metadata['provider_name'])) {
+        if ($details['providerName'] !== null) {
             throw PrismException::providerResponseError(sprintf(
-                'OpenRouter Provider Error (%s): %s',
-                data_get($metadata, 'provider_name'),
+                'OpenRouter Provider Error%s: %s',
+                $providerLabel,
                 $message
             ));
         }

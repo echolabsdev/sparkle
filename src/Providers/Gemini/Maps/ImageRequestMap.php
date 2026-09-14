@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prism\Prism\Providers\Gemini\Maps;
 
 use Illuminate\Support\Arr;
+use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Images\Request;
 
 class ImageRequestMap
@@ -27,6 +28,18 @@ class ImageRequestMap
 
         // Add images first (Gemini best practice for multimodal prompts)
         foreach ($request->additionalContent() as $image) {
+            // Inlined unconditionally, and this map is not a ProviderMediaMapper,
+            // so no validateMedia() ever ran here. A URL input image used to be
+            // fetched and inlined; with that fetch gone it would inline `null`
+            // without a word. Refused instead, with the same way out.
+            if ($image->isUrl() && ! $image->hasRawContent()) {
+                throw new PrismException(
+                    'Gemini image generation needs input image bytes, and this image was built from a URL. Prism '
+                    .'no longer fetches a URL implicitly. If you trust this URL, call fetchUrlContent() on the image '
+                    .'before sending it.'
+                );
+            }
+
             $parts[] = [
                 'inlineData' => [
                     'mimeType' => $image->mimeType(),

@@ -15,6 +15,7 @@ use Prism\Prism\Providers\OpenRouter\Concerns\BuildsRequestOptions;
 use Prism\Prism\Providers\OpenRouter\Concerns\MapsFinishReason;
 use Prism\Prism\Providers\OpenRouter\Concerns\ValidatesResponses;
 use Prism\Prism\Providers\OpenRouter\Maps\MessageMap;
+use Prism\Prism\Providers\OpenRouter\ValueObjects\OpenRouterStreamState;
 use Prism\Prism\Streaming\EventID;
 use Prism\Prism\Streaming\Events\StepFinishEvent;
 use Prism\Prism\Streaming\Events\StepStartEvent;
@@ -28,7 +29,6 @@ use Prism\Prism\Streaming\Events\ThinkingCompleteEvent;
 use Prism\Prism\Streaming\Events\ThinkingEvent;
 use Prism\Prism\Streaming\Events\ThinkingStartEvent;
 use Prism\Prism\Streaming\Events\ToolCallEvent;
-use Prism\Prism\Streaming\StreamState;
 use Prism\Prism\Text\Request;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
 use Prism\Prism\ValueObjects\Messages\ToolResultMessage;
@@ -44,11 +44,11 @@ class Stream
     use MapsFinishReason;
     use ValidatesResponses;
 
-    protected StreamState $state;
+    protected OpenRouterStreamState $state;
 
     public function __construct(protected PendingRequest $client)
     {
-        $this->state = new StreamState;
+        $this->state = new OpenRouterStreamState;
     }
 
     /**
@@ -56,6 +56,8 @@ class Stream
      */
     public function handle(Request $request): Generator
     {
+        yield from $this->resolveToolApprovalsAndYieldEvents($request, EventID::generate());
+
         $response = $this->sendRequest($request);
 
         yield from $this->processStream($response, $request);
@@ -158,7 +160,7 @@ class Stream
                 return;
             }
 
-            if ($this->hasReasoningDelta($data)) {
+            if ($this->hasReasoningData($data)) {
                 $reasoningDelta = $this->extractReasoningDelta($data);
 
                 if ($reasoningDelta !== '') {
@@ -182,9 +184,11 @@ class Stream
                         delta: $reasoningDelta,
                         reasoningId: $this->state->reasoningId()
                     );
-
-                    continue;
                 }
+
+                $this->captureReasoningDetails($data);
+
+                continue;
             }
 
             $content = $this->extractContentDelta($data);
@@ -258,6 +262,7 @@ class Stream
             timestamp: time(),
             finishReason: $this->state->finishReason() ?? FinishReason::Stop,
             usage: $this->state->usage() ?? new Usage(0, 0),
+            additionalContent: $this->buildAdditionalContent(),
         );
     }
 
@@ -332,9 +337,10 @@ class Stream
     /**
      * @param  array<string, mixed>  $data
      */
-    protected function hasReasoningDelta(array $data): bool
+    protected function hasReasoningData(array $data): bool
     {
-        return isset($data['choices'][0]['delta']['reasoning']);
+        return isset($data['choices'][0]['delta']['reasoning'])
+            || ! empty($data['choices'][0]['delta']['reasoning_details']);
     }
 
     /**
@@ -342,7 +348,38 @@ class Stream
      */
     protected function extractReasoningDelta(array $data): string
     {
-        return data_get($data, 'choices.0.delta.reasoning', '');
+        return data_get($data, 'choices.0.delta.reasoning') ?? '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function captureReasoningDetails(array $data): void
+    {
+        $details = data_get($data, 'choices.0.delta.reasoning_details', []);
+
+        foreach ($details as $detail) {
+            $this->state->addReasoningDetail($detail);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function buildAdditionalContent(): array
+    {
+        $additionalContent = [];
+
+        $thinking = $this->state->currentThinking();
+        if ($thinking !== '') {
+            $additionalContent['reasoning'] = $thinking;
+        }
+
+        if ($this->state->reasoningDetails() !== []) {
+            $additionalContent['reasoning_details'] = $this->state->reasoningDetails();
+        }
+
+        return $additionalContent;
     }
 
     /**
@@ -389,7 +426,17 @@ class Stream
         }
 
         $toolResults = [];
-        yield from $this->callToolsAndYieldEvents($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults);
+        $hasPendingToolCalls = false;
+        yield from $this->callToolsAndYieldEventsWithPending($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults, $hasPendingToolCalls);
+
+        if ($hasPendingToolCalls) {
+            // Client-executed or approval-required tool calls: end the stream
+            // with FinishReason::ToolCalls so the consumer resolves and resumes.
+            $this->state->markStepFinished();
+            yield from $this->yieldToolCallsFinishEvents($this->state);
+
+            return;
+        }
 
         $this->state->markStepFinished();
         yield new StepFinishEvent(
@@ -397,7 +444,7 @@ class Stream
             timestamp: time()
         );
 
-        $request->addMessage(new AssistantMessage($text, $mappedToolCalls));
+        $request->addMessage(new AssistantMessage($text, $mappedToolCalls, $this->buildAdditionalContent()));
         $request->addMessage(new ToolResultMessage($toolResults));
         $request->resetToolChoice();
 
@@ -430,7 +477,7 @@ class Stream
                 if (is_string($arguments) && $arguments !== '') {
                     try {
                         $parsedArguments = json_decode($arguments, true, flags: JSON_THROW_ON_ERROR);
-                        $arguments = $parsedArguments;
+                        $arguments = is_array($parsedArguments) ? $parsedArguments : ['raw' => $arguments];
                     } catch (Throwable) {
                         $arguments = ['raw' => $arguments];
                     }
@@ -499,10 +546,13 @@ class Stream
         }
 
         return new Usage(
-            promptTokens: (int) data_get($usage, 'prompt_tokens', 0),
+            promptTokens: max(0, (int) data_get($usage, 'prompt_tokens', 0) - (int) data_get($usage, 'prompt_tokens_details.cached_tokens', 0)),
             completionTokens: (int) data_get($usage, 'completion_tokens', 0),
-            cacheReadInputTokens: (int) data_get($usage, 'prompt_tokens_details.cached_tokens', 0),
-            thoughtTokens: (int) data_get($usage, 'completion_tokens_details.reasoning_tokens', 0)
+            // OpenRouter: usage.prompt_tokens_details.cache_write_tokens / cached_tokens
+            cacheWriteInputTokens: (int) data_get($usage, 'prompt_tokens_details.cache_write_tokens', 0) ?: null,
+            cacheReadInputTokens: (int) data_get($usage, 'prompt_tokens_details.cached_tokens', 0) ?: null,
+            thoughtTokens: (int) data_get($usage, 'completion_tokens_details.reasoning_tokens', 0) ?: null,
+            cost: ($cost = data_get($usage, 'cost')) !== null ? (float) $cost : null,
         );
     }
 }

@@ -76,11 +76,11 @@ it('converts to array with all properties', function (): void {
         id: 'artifact-789',
     );
 
-    expect($artifact->toArray())->toBe([
+    expect($artifact->toArray())->toEqual([
         'id' => 'artifact-789',
         'data' => 'dGVzdCBkYXRh',
         'mime_type' => 'text/plain',
-        'metadata' => ['key' => 'value'],
+        'metadata' => (object) ['key' => 'value'],
     ]);
 });
 
@@ -90,11 +90,11 @@ it('converts to array with minimal properties', function (): void {
         mimeType: 'application/json',
     );
 
-    expect($artifact->toArray())->toBe([
+    expect($artifact->toArray())->toEqual([
         'id' => null,
         'data' => 'c29tZSBkYXRh',
         'mime_type' => 'application/json',
-        'metadata' => [],
+        'metadata' => new stdClass,
     ]);
 });
 

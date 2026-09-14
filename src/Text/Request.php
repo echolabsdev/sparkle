@@ -7,6 +7,7 @@ namespace Prism\Prism\Text;
 use Closure;
 use Prism\Prism\Concerns\ChecksSelf;
 use Prism\Prism\Concerns\HasProviderOptions;
+use Prism\Prism\Concerns\HasReasoning;
 use Prism\Prism\Contracts\Message;
 use Prism\Prism\Contracts\PrismRequest;
 use Prism\Prism\Enums\ToolChoice;
@@ -16,7 +17,7 @@ use Prism\Prism\ValueObjects\ProviderTool;
 
 class Request implements PrismRequest
 {
-    use ChecksSelf, HasProviderOptions;
+    use ChecksSelf, HasProviderOptions, HasReasoning;
 
     /**
      * @param  SystemMessage[]  $systemPrompts
@@ -29,22 +30,25 @@ class Request implements PrismRequest
      */
     public function __construct(
         protected string $model,
-        protected string $providerKey,
-        protected array $systemPrompts,
-        protected ?string $prompt,
-        protected array $messages,
-        protected int $maxSteps,
-        protected ?int $maxTokens,
-        protected int|float|null $temperature,
-        protected int|float|null $topP,
-        protected array $tools,
-        protected array $clientOptions,
-        protected array $clientRetry,
-        protected string|ToolChoice|null $toolChoice,
+        protected ?string $providerKey = null,
+        protected array $systemPrompts = [],
+        protected ?string $prompt = null,
+        protected array $messages = [],
+        protected int $maxSteps = 1,
+        protected ?int $maxTokens = null,
+        protected int|float|null $temperature = null,
+        protected int|float|null $topP = null,
+        protected ?int $topK = null,
+        protected array $tools = [],
+        protected array $clientOptions = [],
+        protected array $clientRetry = [0],
+        protected string|ToolChoice|null $toolChoice = null,
         array $providerOptions = [],
         protected array $providerTools = [],
+        ?bool $reasoningEnabled = null,
     ) {
         $this->providerOptions = $providerOptions;
+        $this->reasoningEnabled = $reasoningEnabled;
     }
 
     public function toolChoice(): string|ToolChoice|null
@@ -79,6 +83,11 @@ class Request implements PrismRequest
     public function topP(): int|float|null
     {
         return $this->topP;
+    }
+
+    public function topK(): ?int
+    {
+        return $this->topK;
     }
 
     /**
@@ -131,7 +140,7 @@ class Request implements PrismRequest
         return $this->model;
     }
 
-    public function provider(): string
+    public function provider(): ?string
     {
         return $this->providerKey;
     }
@@ -139,6 +148,16 @@ class Request implements PrismRequest
     public function addMessage(Message $message): self
     {
         $this->messages = array_merge($this->messages, [$message]);
+
+        return $this;
+    }
+
+    /**
+     * @param  Message[]  $messages
+     */
+    public function setMessages(array $messages): self
+    {
+        $this->messages = $messages;
 
         return $this;
     }

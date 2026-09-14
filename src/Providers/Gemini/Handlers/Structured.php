@@ -18,7 +18,7 @@ use Prism\Prism\Providers\Gemini\Maps\FinishReasonMap;
 use Prism\Prism\Providers\Gemini\Maps\MessageMap;
 use Prism\Prism\Providers\Gemini\Maps\SchemaMap;
 use Prism\Prism\Providers\Gemini\Maps\ToolCallMap;
-use Prism\Prism\Providers\Gemini\Maps\ToolChoiceMap;
+use Prism\Prism\Providers\Gemini\Maps\ToolConfigMap;
 use Prism\Prism\Providers\Gemini\Maps\ToolMap;
 use Prism\Prism\Structured\Request;
 use Prism\Prism\Structured\Response as StructuredResponse;
@@ -47,6 +47,8 @@ class Structured
 
     public function handle(Request $request): StructuredResponse
     {
+        $this->resolveToolApprovals($request);
+
         $data = $this->sendRequest($request);
 
         $this->validateResponse($data);
@@ -67,8 +69,7 @@ class Structured
 
         return match ($finishReason) {
             FinishReason::ToolCalls => $this->handleToolCalls($data, $request),
-            FinishReason::Stop, FinishReason::Length => $this->handleStop($data, $request, $finishReason),
-            default => throw new PrismException('Gemini: unhandled finish reason'),
+            default => $this->handleStop($data, $request, $finishReason),
         };
     }
 
@@ -79,9 +80,7 @@ class Structured
     {
         $providerOptions = $request->providerOptions();
 
-        if ($request->tools() !== [] && $request->providerTools() !== []) {
-            throw new PrismException('Use of provider tools with custom tools is not currently supported by Gemini.');
-        }
+        $hasBothToolTypes = $request->tools() !== [] && $request->providerTools() !== [];
 
         $tools = [];
 
@@ -90,17 +89,15 @@ class Structured
                 Arr::mapWithKeys(
                     $request->providerTools(),
                     fn (ProviderTool $providerTool): array => [
-                        $providerTool->type => $providerTool->options !== [] ? $providerTool->options : (object) [],
+                        $providerTool->type => $providerTool->optionsAsObject(),
                     ]
                 ),
             ];
         }
 
         if ($request->tools() !== []) {
-            $tools = [
-                [
-                    'function_declarations' => ToolMap::map($request->tools()),
-                ],
+            $tools[] = [
+                'function_declarations' => ToolMap::map($request->tools()),
             ];
         }
 
@@ -120,6 +117,12 @@ class Structured
             ]);
         }
 
+        if ($request->reasoningEnabled() === false && $thinkingConfig === null) {
+            $thinkingConfig = ['thinkingBudget' => 0];
+        }
+
+        $toolConfig = ToolConfigMap::map($request->toolChoice(), $hasBothToolTypes);
+
         /** @var Response $response */
         $response = $this->client->post(
             "{$request->model()}:generateContent",
@@ -128,15 +131,21 @@ class Structured
                 'cachedContent' => $providerOptions['cachedContentName'] ?? null,
                 'generationConfig' => Arr::whereNotNull([
                     'response_mime_type' => 'application/json',
-                    'response_schema' => (new SchemaMap($request->schema()))->toArray(),
+                    // response_json_schema takes standard JSON Schema, which the
+                    // Prism schema objects already emit natively (type arrays for
+                    // nullability, null in nullable enums) — no OpenAPI-style
+                    // SchemaMap conversion, which would lose nullable semantics.
+                    'response_json_schema' => $request->schema()->toArray(),
                     'temperature' => $request->temperature(),
                     'topP' => $request->topP(),
+                    'topK' => $request->topK(),
                     'maxOutputTokens' => $request->maxTokens(),
                     'thinkingConfig' => $thinkingConfig,
                 ]),
                 'tools' => $tools !== [] ? $tools : null,
-                'tool_config' => $request->toolChoice() ? ToolChoiceMap::map($request->toolChoice()) : null,
+                'tool_config' => $toolConfig,
                 'safetySettings' => $providerOptions['safetySettings'] ?? null,
+                'service_tier' => $providerOptions['serviceTier'] ?? null,
             ])
         );
 
@@ -168,8 +177,8 @@ class Structured
             $totalTokens = data_get($data, 'usageMetadata.totalTokenCount', 0);
             $outputTokens = $candidatesTokens - $thoughtTokens;
 
-            $isEmpty = in_array(trim($content), ['', '0'], true);
-            $isInvalidJson = $content !== '' && $content !== '0' && json_decode($content) === null;
+            $isEmpty = trim($content) === '';
+            $isInvalidJson = $content !== '' && json_decode($content) === null;
             $contentLength = strlen($content);
 
             if (($isEmpty || $isInvalidJson) && $thoughtTokens > 0) {
@@ -202,17 +211,28 @@ class Structured
      */
     protected function handleToolCalls(array $data, Request $request): StructuredResponse
     {
-        $toolResults = $this->callTools(
-            $request->tools(),
-            ToolCallMap::map(data_get($data, 'candidates.0.content.parts', []))
-        );
+        $toolCalls = ToolCallMap::map(data_get($data, 'candidates.0.content.parts', []));
+
+        $hasPendingToolCalls = false;
+        $approvalRequests = [];
+        $toolResults = $this->callToolsWithPending($request->tools(), $toolCalls, $hasPendingToolCalls, $approvalRequests);
+
+        if ($approvalRequests !== []) {
+            // Record the tool calls + approval requests so the resume pass
+            // can correlate approval responses.
+            $request->addMessage(new AssistantMessage(
+                $this->extractTextContent($data),
+                $toolCalls,
+                toolApprovalRequests: $approvalRequests,
+            ));
+        }
 
         $request->addMessage(new ToolResultMessage($toolResults));
         $request->resetToolChoice();
 
         $this->addStep($data, $request, FinishReason::ToolCalls, $toolResults);
 
-        if ($this->shouldContinue($request)) {
+        if (! $hasPendingToolCalls && $this->shouldContinue($request)) {
             return $this->handle($request);
         }
 
@@ -234,7 +254,7 @@ class Structured
                 text: $textContent,
                 finishReason: $finishReason,
                 usage: new Usage(
-                    promptTokens: data_get($data, 'usageMetadata.promptTokenCount', 0),
+                    promptTokens: max(0, (int) data_get($data, 'usageMetadata.promptTokenCount', 0) - (int) data_get($data, 'usageMetadata.cachedContentTokenCount', 0)),
                     completionTokens: data_get($data, 'usageMetadata.candidatesTokenCount', 0),
                     cacheReadInputTokens: data_get($data, 'usageMetadata.cachedContentTokenCount'),
                     thoughtTokens: data_get($data, 'usageMetadata.thoughtsTokenCount'),

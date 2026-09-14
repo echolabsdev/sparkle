@@ -68,7 +68,7 @@ it('converts to array correctly', function (): void {
 
     $array = $event->toArray();
 
-    expect($array)->toBe([
+    expect($array)->toEqual([
         'id' => 'event-123',
         'timestamp' => 1640995200,
         'tool_call_id' => 'tool-456',
@@ -78,7 +78,7 @@ it('converts to array correctly', function (): void {
             'id' => 'pdf-doc-001',
             'data' => 'cGRmIGNvbnRlbnQ=',
             'mime_type' => 'application/pdf',
-            'metadata' => ['pages' => 5, 'title' => 'Report'],
+            'metadata' => (object) ['pages' => 5, 'title' => 'Report'],
         ],
     ]);
 });
@@ -101,7 +101,7 @@ it('handles artifact without id', function (): void {
     $array = $event->toArray();
 
     expect($array['artifact']['id'])->toBeNull()
-        ->and($array['artifact']['metadata'])->toBe([]);
+        ->and($array['artifact']['metadata'])->toEqual(new stdClass);
 });
 
 it('handles artifact with complex metadata', function (): void {
@@ -128,9 +128,9 @@ it('handles artifact with complex metadata', function (): void {
 
     $array = $event->toArray();
 
-    expect($array['artifact']['metadata'])->toHaveKeys(['dimensions', 'format', 'colorSpace', 'tags'])
-        ->and($array['artifact']['metadata']['dimensions'])->toBe(['width' => 1920, 'height' => 1080])
-        ->and($array['artifact']['metadata']['tags'])->toBe(['generated', 'ai', 'landscape']);
+    expect($array['artifact']['metadata'])->toHaveProperties(['dimensions', 'format', 'colorSpace', 'tags'])
+        ->and($array['artifact']['metadata']->dimensions)->toBe(['width' => 1920, 'height' => 1080])
+        ->and($array['artifact']['metadata']->tags)->toBe(['generated', 'ai', 'landscape']);
 });
 
 it('handles various mime types', function (): void {

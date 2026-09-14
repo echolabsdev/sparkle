@@ -1,0 +1,12 @@
+# Every path in this repository is owned by the project owner.
+#
+# Paired with the "main protection" branch ruleset, which requires a pull
+# request carrying an approving review from a code owner before anything can
+# land on the default branch. Outside contributions therefore cannot merge
+# without an explicit human review, and agents cannot approve on the owner's
+# behalf.
+#
+# Repository admins bypass the ruleset, so day-to-day direct pushes by the
+# owner are unaffected.
+
+* @wishborn

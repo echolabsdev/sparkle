@@ -21,7 +21,7 @@ class ToolMap
             ...count($tool->parameters()) ? [
                 'parameters' => [
                     'type' => 'object',
-                    'properties' => $tool->parametersAsArray(),
+                    'properties' => $tool->parametersAsObject(),
                     'required' => $tool->requiredParameters(),
                 ],
             ] : [],

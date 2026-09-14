@@ -19,6 +19,7 @@ function createStructuredRequestWithToolChoice(string|ToolChoice|null $toolChoic
         maxTokens: null,
         temperature: null,
         topP: null,
+        topK: null,
         clientOptions: [],
         clientRetry: [3, 100],
         schema: new ObjectSchema(

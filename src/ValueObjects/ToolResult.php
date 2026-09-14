@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prism\Prism\ValueObjects;
 
 use Illuminate\Contracts\Support\Arrayable;
+use Prism\Prism\Support\JsonMap;
 
 /**
  * @implements Arrayable<string, mixed>
@@ -39,7 +40,7 @@ readonly class ToolResult implements Arrayable
         return [
             'tool_call_id' => $this->toolCallId,
             'tool_name' => $this->toolName,
-            'args' => $this->args,
+            'args' => JsonMap::of($this->args),
             'result' => $this->result,
             'tool_call_result_id' => $this->toolCallResultId,
             'artifacts' => array_map(fn (Artifact $artifact): array => $artifact->toArray(), $this->artifacts),

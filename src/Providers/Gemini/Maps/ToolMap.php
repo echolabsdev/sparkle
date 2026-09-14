@@ -6,6 +6,7 @@ namespace Prism\Prism\Providers\Gemini\Maps;
 
 use Illuminate\Support\Arr;
 use Prism\Prism\Contracts\Schema;
+use Prism\Prism\Support\JsonMap;
 use Prism\Prism\Tool;
 
 class ToolMap
@@ -26,7 +27,7 @@ class ToolMap
             ...$tool->hasParameters() ? [
                 'parameters' => [
                     'type' => 'object',
-                    'properties' => self::mapProperties($tool->parameters()),
+                    'properties' => JsonMap::ofMaps(self::mapProperties($tool->parameters())),
                     'required' => $tool->requiredParameters(),
                 ],
             ] : [],

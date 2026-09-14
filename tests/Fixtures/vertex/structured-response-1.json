@@ -1,0 +1,22 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\"name\":\"John Doe\",\"age\":30,\"email\":\"john.doe@example.com\"}"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "avgLogprobs": -0.08
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 50,
+    "candidatesTokenCount": 25,
+    "totalTokenCount": 75
+  },
+  "modelVersion": "gemini-1.5-flash"
+}

@@ -7,6 +7,7 @@ namespace Prism\Prism\ValueObjects\Messages;
 use Illuminate\Contracts\Support\Arrayable;
 use Prism\Prism\Concerns\HasProviderOptions;
 use Prism\Prism\Contracts\Message;
+use Prism\Prism\Support\JsonMap;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
@@ -121,7 +122,7 @@ class UserMessage implements Arrayable, Message
                 fn (Text|Image|Document|Media $content): array => $content->toArray(),
                 $this->additionalContent
             ),
-            'additional_attributes' => $this->additionalAttributes,
+            'additional_attributes' => JsonMap::of($this->additionalAttributes),
         ];
     }
 }

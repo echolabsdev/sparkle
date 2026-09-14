@@ -14,7 +14,7 @@ use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Exceptions\PrismStreamDecodeException;
 use Prism\Prism\Providers\Gemini\Maps\FinishReasonMap;
 use Prism\Prism\Providers\Gemini\Maps\MessageMap;
-use Prism\Prism\Providers\Gemini\Maps\ToolChoiceMap;
+use Prism\Prism\Providers\Gemini\Maps\ToolConfigMap;
 use Prism\Prism\Providers\Gemini\Maps\ToolMap;
 use Prism\Prism\Streaming\EventID;
 use Prism\Prism\Streaming\Events\StepFinishEvent;
@@ -58,6 +58,8 @@ class Stream
      */
     public function handle(Request $request): Generator
     {
+        yield from $this->resolveToolApprovalsAndYieldEvents($request, EventID::generate());
+
         $this->state->reset();
         $this->currentThoughtSignature = null;
         $response = $this->sendRequest($request);
@@ -241,7 +243,8 @@ class Stream
         $this->state->markStepFinished();
         yield new StepFinishEvent(
             id: EventID::generate(),
-            timestamp: time()
+            timestamp: time(),
+            usage: $this->state->usage(),
         );
 
         yield $this->emitStreamEndEvent();
@@ -334,14 +337,25 @@ class Stream
 
         // Execute tools and emit results
         $toolResults = [];
-        yield from $this->callToolsAndYieldEvents($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults);
+        $hasPendingToolCalls = false;
+        yield from $this->callToolsAndYieldEventsWithPending($request->tools(), $mappedToolCalls, $this->state->messageId(), $toolResults, $hasPendingToolCalls);
+
+        if ($hasPendingToolCalls) {
+            // Client-executed or approval-required tool calls: end the stream
+            // with FinishReason::ToolCalls so the consumer resolves and resumes.
+            $this->state->markStepFinished();
+            yield from $this->yieldToolCallsFinishEvents($this->state);
+
+            return;
+        }
 
         if ($toolResults !== []) {
             // Emit step finish after tool calls
             $this->state->markStepFinished();
             yield new StepFinishEvent(
                 id: EventID::generate(),
-                timestamp: time()
+                timestamp: time(),
+                usage: $this->state->usage(),
             );
 
             $request->addMessage(new AssistantMessage($this->state->currentText(), $mappedToolCalls));
@@ -415,12 +429,8 @@ class Stream
      */
     protected function extractUsage(array $data, Request $request): Usage
     {
-        $providerOptions = $request->providerOptions();
-
         return new Usage(
-            promptTokens: isset($providerOptions['cachedContentName'])
-                ? (data_get($data, 'usageMetadata.promptTokenCount', 0) - data_get($data, 'usageMetadata.cachedContentTokenCount', 0))
-                : data_get($data, 'usageMetadata.promptTokenCount', 0),
+            promptTokens: max(0, (int) data_get($data, 'usageMetadata.promptTokenCount', 0) - (int) data_get($data, 'usageMetadata.cachedContentTokenCount', 0)),
             completionTokens: data_get($data, 'usageMetadata.candidatesTokenCount', 0),
             cacheReadInputTokens: data_get($data, 'usageMetadata.cachedContentTokenCount'),
             thoughtTokens: data_get($data, 'usageMetadata.thoughtsTokenCount'),
@@ -447,31 +457,28 @@ class Stream
     {
         $providerOptions = $request->providerOptions();
 
-        if ($request->tools() !== [] && $request->providerTools() !== []) {
-            throw new PrismException('Use of provider tools with custom tools is not currently supported by Gemini.');
-        }
-
-        if ($request->tools() !== [] && ($providerOptions['searchGrounding'] ?? false)) {
-            throw new PrismException('Use of search grounding with custom tools is not currently supported by Prism.');
-        }
+        $hasSearchGrounding = (bool) ($providerOptions['searchGrounding'] ?? false);
+        $hasBothToolTypes = $request->tools() !== [] && ($request->providerTools() !== [] || $hasSearchGrounding);
 
         $tools = [];
 
         if ($request->providerTools() !== []) {
             $tools = array_map(
                 fn ($providerTool): array => [
-                    $providerTool->type => $providerTool->options !== [] ? $providerTool->options : (object) [],
+                    $providerTool->type => $providerTool->optionsAsObject(),
                 ],
                 $request->providerTools()
             );
-        } elseif ($providerOptions['searchGrounding'] ?? false) {
+        } elseif ($hasSearchGrounding) {
             $tools = [
                 [
                     'google_search' => (object) [],
                 ],
             ];
-        } elseif ($request->tools() !== []) {
-            $tools = ['function_declarations' => ToolMap::map($request->tools())];
+        }
+
+        if ($request->tools() !== []) {
+            $tools[] = ['function_declarations' => ToolMap::map($request->tools())];
         }
 
         $thinkingConfig = $providerOptions['thinkingConfig'] ?? null;
@@ -490,6 +497,12 @@ class Stream
             ];
         }
 
+        if ($request->reasoningEnabled() === false && $thinkingConfig === null) {
+            $thinkingConfig = ['thinkingBudget' => 0];
+        }
+
+        $toolConfig = ToolConfigMap::map($request->toolChoice(), $hasBothToolTypes);
+
         /** @var Response $response */
         $response = $this->client
             ->withOptions(['stream' => true])
@@ -501,12 +514,14 @@ class Stream
                     'generationConfig' => Arr::whereNotNull([
                         'temperature' => $request->temperature(),
                         'topP' => $request->topP(),
+                        'topK' => $request->topK(),
                         'maxOutputTokens' => $request->maxTokens(),
                         'thinkingConfig' => $thinkingConfig,
                     ]) ?: null,
                     'tools' => $tools !== [] ? $tools : null,
-                    'tool_config' => $request->toolChoice() ? ToolChoiceMap::map($request->toolChoice()) : null,
+                    'tool_config' => $toolConfig,
                     'safetySettings' => $providerOptions['safetySettings'] ?? null,
+                    'service_tier' => $providerOptions['serviceTier'] ?? null,
                 ])
             );
 

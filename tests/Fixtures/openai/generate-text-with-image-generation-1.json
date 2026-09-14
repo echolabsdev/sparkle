@@ -1,0 +1,73 @@
+{
+  "id": "resp_9f2a1c4d6810819d8a8df409b49fcb6a034e2410358c31f8",
+  "object": "response",
+  "created_at": 1789100000,
+  "status": "completed",
+  "background": false,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": 2048,
+  "max_tool_calls": null,
+  "model": "gpt-5.2",
+  "output": [
+    {
+      "id": "ig_9f2a1c4de318819da96c80a2e811984f034e2410358c31f8",
+      "type": "image_generation_call",
+      "status": "completed",
+      "revised_prompt": "A photorealistic prism refracting daylight onto a pale wall",
+      "size": "1024x1024",
+      "quality": "high",
+      "background": "opaque",
+      "output_format": "png",
+      "result": "aVdBTUEAALGPC/xhBQAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+QA"
+    },
+    {
+      "id": "msg_9f2a1c406c08819d891c6821dfa2ee32034e2410358c31f8",
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "text": "Here is the prism image you asked for."
+        }
+      ]
+    }
+  ],
+  "parallel_tool_calls": true,
+  "previous_response_id": null,
+  "reasoning": {
+    "effort": null,
+    "summary": null
+  },
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "image_generation"
+    }
+  ],
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 42,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 18,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 60
+  },
+  "user": null,
+  "metadata": {}
+}

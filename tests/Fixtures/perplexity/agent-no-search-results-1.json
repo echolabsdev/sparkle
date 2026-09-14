@@ -1,0 +1,20 @@
+{
+  "id": "resp_nosearch_0001",
+  "object": "response",
+  "status": "completed",
+  "model": "google/gemini-3-pro",
+  "created_at": 1763328436,
+  "completed_at": 1763328441,
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_nosearch",
+      "role": "assistant",
+      "content": [
+        { "type": "output_text", "text": "Four." }
+      ]
+    }
+  ],
+  "usage": { "input_tokens": 5, "output_tokens": 2, "total_tokens": 7 },
+  "error": null
+}

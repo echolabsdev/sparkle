@@ -1,0 +1,22 @@
+{
+    "id": "prv1025gk1rga0ct9g7rmktdaw",
+    "model": "jaaari\/kokoro-82m",
+    "version": "f559560eb822dc509045f3921a1921234918b91739db4bf3daab2169b71c7a13",
+    "input": {
+        "text": "This is a longer piece of text to test the text-to-speech capabilities.",
+        "voice": "af_sky"
+    },
+    "logs": "",
+    "output": null,
+    "data_removed": false,
+    "error": null,
+    "source": "api",
+    "status": "starting",
+    "created_at": "2025-11-03T23:31:28.024Z",
+    "urls": {
+        "cancel": "https:\/\/api.replicate.com\/v1\/predictions\/prv1025gk1rga0ct9g7rmktdaw\/cancel",
+        "get": "https:\/\/api.replicate.com\/v1\/predictions\/prv1025gk1rga0ct9g7rmktdaw",
+        "stream": "https:\/\/stream.replicate.com\/v1\/files\/fddq-amvwplfdc2znriou7sgcqus3zurxfosqod4i7hh75p4bv6zcbxqq",
+        "web": "https:\/\/replicate.com\/p\/prv1025gk1rga0ct9g7rmktdaw"
+    }
+}

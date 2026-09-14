@@ -1,0 +1,201 @@
+name: Publish
+
+# Named `publish.yml`, the name every package in the estate publishes from.
+# Packagist does not bind to a workflow filename the way npm's and PyPI's trusted
+# publishers do, so nothing breaks here if it changes. Keep it anyway: one name
+# means `gh run list --workflow=publish.yml` finds the publish run in any repo.
+
+# A release is a tag push, and nothing else. No manual dispatch: a release that
+# can be cut from a branch is a release no commit claims.
+#
+# There is no upload step here, and that is not an omission. Composer resolves
+# versions from git tags and Packagist mirrors them over a webhook, so pushing
+# the tag IS the publish. What this workflow adds is the part that has actually
+# gone wrong in this ecosystem: establishing that the tag was tested, and that
+# the package really became installable afterwards.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Guard the tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Run again when the tag lands, not only when the commit did: a dependency
+      # that has since gone unmaintained, or an approval since withdrawn, fails
+      # here. That withholds the GitHub release and flags the tag. It does NOT
+      # stop the publish -- Packagist already has the version once the tag is
+      # pushed -- so the check that matters is the one in tests.yml, before tagging.
+      - name: Fetch the third-party allowlist
+        uses: actions/checkout@v4
+        with:
+          repository: Particle-Academy/.github
+          path: .third-party-allowlist
+          persist-credentials: false
+
+      - name: Third-party dependency allowlist
+        run: |
+          node .third-party-allowlist/third-party/check.mjs --repo .
+          node -e "require('node:fs').rmSync('.third-party-allowlist',{recursive:true,force:true})"
+
+      # Two separate questions, because they fail differently.
+      #
+      # "Did anything fail?" misses the case that matters most here: a package
+      # whose tests never ran at all reports nothing failed. prism-opentelemetry
+      # shipped v0.1.1 in exactly that state -- 32 tests on disk, no workflow
+      # invoking them, CI green.
+      - name: Tests must have SUCCEEDED for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/tests.yml/runs?head_sha=${GITHUB_SHA}&status=success" --jq '.total_count')"
+          echo "Successful Tests runs for ${GITHUB_SHA}: ${count}"
+          if [ "${count}" -lt 1 ]; then
+            echo "::error::No successful Tests run for ${GITHUB_SHA}. Refusing to release."
+            exit 1
+          fi
+
+      - name: No other gate may have failed on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          failed="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${GITHUB_SHA}&status=completed" --jq '[.workflow_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .name] | unique | join(", ")')"
+          if [ -n "${failed}" ]; then
+            echo "::error::These workflows failed on ${GITHUB_SHA}: ${failed}"
+            exit 1
+          fi
+          echo "No failing workflows on ${GITHUB_SHA}."
+
+      # Composer derives the version from the tag, so unlike the Python packages
+      # there is no declared version to disagree with. A `version` key in
+      # composer.json would REINTRODUCE that disagreement, which is why Composer
+      # advises against it -- so it is refused here rather than trusted.
+      - name: composer.json must not pin a version
+        run: |
+          composer validate --no-check-publish --no-check-all
+          if grep -Eq '^[[:space:]]*"version"[[:space:]]*:' composer.json; then
+            echo "::error::composer.json declares a version. Composer takes the version from the tag; remove the key."
+            exit 1
+          fi
+
+  release:
+    name: Create the GitHub release
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # `--notes-from-tag`, never `--generate-notes`.
+      #
+      # These packages ship no CHANGELOG file, so the ANNOTATED TAG is the
+      # changelog entry -- and `--generate-notes` silently discards it and
+      # substitutes a list of commit subjects plus a compare link. That is not a
+      # smaller version of the notes; it is different content written by nobody.
+      #
+      # It has already cost us once: prism-harness v0.3.0 was tagged with 1974
+      # characters explaining a security fix that invalidates existing pins, and
+      # the release published 94 characters of autogenerated link.
+      #
+      # A consequence worth knowing rather than discovering: this REQUIRES an
+      # annotated tag. `git tag v1.2.3` with no message fails the step. That is
+      # deliberate -- a release with nothing to say about itself should not be
+      # quietly publishable.
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists; leaving it alone."
+            exit 0
+          fi
+          # The annotation is read from the GitHub API, and this is the THIRD
+          # mechanism tried. The two that failed both did so silently, which is
+          # the only reason this comment is worth its length:
+          #
+          #   --generate-notes     discarded the annotation and published a list
+          #                        of commit subjects. prism-harness v0.3.0 went
+          #                        out with 94 characters where 1974 were written.
+          #   --notes-from-tag     published the last COMMIT message. `gh` does
+          #                        not resolve the annotation in an Actions
+          #                        checkout and does not say so.
+          #   git tag -l %(contents)   published the last COMMIT message too, for
+          #                        the real reason: actions/checkout creates a
+          #                        LIGHTWEIGHT local tag, and %(contents) on a
+          #                        lightweight tag falls back to the commit.
+          #
+          # Every one of those produced something plausible rather than an error,
+          # which is why each was believed until a human read the release page.
+          #
+          # The API holds the real annotation object. Asking it directly also
+          # lets the lightweight case be DETECTED rather than silently degraded:
+          # `.object.type` is "tag" for an annotated tag and "commit" otherwise.
+          TAG_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.type')"
+
+          if [ "${TAG_TYPE}" != "tag" ]; then
+            echo "::error::${GITHUB_REF_NAME} is a lightweight tag, so it carries no notes. Tag with 'git tag -a' -- the message IS the release notes."
+            exit 1
+          fi
+
+          TAG_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.sha')"
+          gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_SHA}" --jq '.message' > /tmp/release-notes.md
+
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "::error::${GITHUB_REF_NAME} has an empty annotation."
+            exit 1
+          fi
+
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --notes-file /tmp/release-notes.md --verify-tag
+
+  distribution:
+    name: Verify it is installable
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # The step this ecosystem was missing. A tag is not a release and a
+      # release is not a distribution: particle-academy/prism-human-plus was
+      # tagged and had a GitHub release while `composer require` still failed,
+      # because nobody had submitted it to Packagist -- and nothing anywhere
+      # noticed. prism-memory and prism-workspace are in that state right now.
+      #
+      # Packagist mirrors over a webhook, so this polls rather than checking
+      # once, and says what to DO when it never appears.
+      - name: Packagist must serve this version
+        run: |
+          pkg="$(php -r 'echo json_decode(file_get_contents("composer.json"), true)["name"];')"
+          want="${GITHUB_REF_NAME}"
+          echo "Waiting for ${pkg} ${want} on Packagist."
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            body="$(curl -fsS "https://repo.packagist.org/p2/${pkg}.json" 2>/dev/null || true)"
+            if [ -z "${body}" ]; then
+              echo "  attempt ${attempt}: package not found on Packagist at all."
+            elif printf '%s' "${body}" | grep -q "\"version\":\"${want}\""; then
+              echo "${pkg} ${want} is installable."
+              exit 0
+            else
+              echo "  attempt ${attempt}: package present, ${want} not published yet."
+            fi
+            sleep 30
+          done
+          echo "::error::${pkg} ${want} never appeared on Packagist. If the package has never been published, submit it at https://packagist.org/packages/submit -- after that Packagist follows tags on its own. If it IS registered, check the GitHub webhook."
+          exit 1

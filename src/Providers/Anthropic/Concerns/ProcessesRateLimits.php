@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Prism\Prism\Support\HeaderNames;
 use Prism\Prism\ValueObjects\ProviderRateLimit;
 
 trait ProcessesRateLimits
@@ -19,7 +20,13 @@ trait ProcessesRateLimits
     {
         $rate_limits = [];
 
-        foreach ($response->getHeaders() as $headerName => $headerValues) {
+        // Folded to lower case first. HTTP field names are case-insensitive
+        // (RFC 9110 5.1), and `getHeaders()` hands back whatever case the wire
+        // carried -- so an `Anthropic-RateLimit-...` from a title-casing gateway
+        // used to match nothing and return an empty list, which is also what a
+        // response with no quota headers looks like. Order survives the fold,
+        // and order is part of the answer here.
+        foreach (HeaderNames::folded($response->getHeaders()) as $headerName => $headerValues) {
             if (Str::startsWith($headerName, 'anthropic-ratelimit-') === false) {
                 continue;
             }
@@ -40,10 +47,42 @@ trait ProcessesRateLimits
                 remaining: data_get($fields, 'remaining') !== null
                     ? (int) data_get($fields, 'remaining')
                     : null,
-                resetsAt: $resets_at !== null
-                    ? (is_numeric($resets_at) ? Carbon::createFromTimestamp((int) $resets_at) : new Carbon($resets_at))
-                    : null
+                resetsAt: $this->parseResetsAt($resets_at)
             );
         }));
+    }
+
+    /**
+     * The reset instant, or null when the header cannot be read as one.
+     *
+     * NEVER throws. `new Carbon('soon')` raises InvalidFormatException, and this
+     * runs on the SUCCESS path -- after the model has answered and the call has
+     * been billed. An unreadable rate-limit header would therefore destroy a
+     * response the caller has already paid for, and turn a quota hint into an
+     * outage.
+     *
+     * The header is not necessarily the provider's, either. Whatever proxy or
+     * gateway sits in front of the API can set it, so the value is not trusted
+     * input just because the response was a 200.
+     *
+     * Failing to null is what the sibling providers already do -- OpenAI returns
+     * null when its duration regex does not match, and Gemini guards every parse
+     * -- so this makes Anthropic consistent rather than inventing a policy. A
+     * missing reset is a smaller loss than a lost response, and it is the same
+     * value the caller gets from a provider that sends no reset header at all.
+     */
+    protected function parseResetsAt(mixed $resets_at): ?Carbon
+    {
+        if ($resets_at === null || $resets_at === '') {
+            return null;
+        }
+
+        try {
+            return is_numeric($resets_at)
+                ? Carbon::createFromTimestamp((int) $resets_at)
+                : new Carbon((string) $resets_at);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

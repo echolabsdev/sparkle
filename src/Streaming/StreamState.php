@@ -245,7 +245,10 @@ class StreamState
             completionTokens: $this->usage->completionTokens + $usage->completionTokens,
             cacheWriteInputTokens: ($this->usage->cacheWriteInputTokens ?? 0) + ($usage->cacheWriteInputTokens ?? 0),
             cacheReadInputTokens: ($this->usage->cacheReadInputTokens ?? 0) + ($usage->cacheReadInputTokens ?? 0),
-            thoughtTokens: ($this->usage->thoughtTokens ?? 0) + ($usage->thoughtTokens ?? 0)
+            thoughtTokens: ($this->usage->thoughtTokens ?? 0) + ($usage->thoughtTokens ?? 0),
+            cost: ($this->usage->cost !== null || $usage->cost !== null)
+                ? ($this->usage->cost ?? 0.0) + ($usage->cost ?? 0.0)
+                : null,
         );
 
         return $this;

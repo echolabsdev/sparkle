@@ -1,0 +1,1 @@
+{"id":"req-12345","object":"chat.completion","created":1737243487,"model":"openai/gpt-4o","choices":[{"index":0,"message":{"role":"assistant","content":"Hello! I'm an AI assistant routed through Requesty. How can I help you today?"},"logprobs":null,"finish_reason":"stop"}],"usage":{"prompt_tokens":7,"completion_tokens":19,"total_tokens":26}}

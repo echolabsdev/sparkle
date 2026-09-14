@@ -1,3 +1,7 @@
+# Normalise text to LF in the repository and on checkout, so a Windows clone
+# does not report every file as modified after a formatter run.
+* text=auto eol=lf
+
 /.github            export-ignore
 /assets             export-ignore
 /bin                export-ignore
@@ -9,4 +13,17 @@
 /rector.php         export-ignore
 /Taskfile.yml       export-ignore
 /testbench.yaml     export-ignore
-/whisky.json        export-ignore
+/dev                export-ignore
+/composer-require-checker.json export-ignore
+
+# /docs itself SHIPS — the docs site renders markdown and the VitePress
+# sidebar out of vendor/particle-academy/prism/docs, and installs with
+# --prefer-dist, so export-ignoring the directory would take that site down.
+# Only the parts nothing reads at runtime are excluded: the 9.6M committed
+# build output, and the dev lockfile that makes dependency scanners flag
+# consumers for advisories in our docs toolchain.
+/docs/.vitepress/dist   export-ignore
+/docs/.vitepress/cache  export-ignore
+/docs/node_modules      export-ignore
+/docs/package.json      export-ignore
+/docs/package-lock.json export-ignore

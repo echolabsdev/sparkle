@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prism\Prism\Images;
 
 use Illuminate\Contracts\Support\Arrayable;
+use Prism\Prism\Support\JsonMap;
 use Prism\Prism\ValueObjects\GeneratedImage;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\Usage;
@@ -52,7 +53,7 @@ readonly class Response implements Arrayable
             'images' => array_map(fn (GeneratedImage $image): array => $image->toArray(), $this->images),
             'usage' => $this->usage->toArray(),
             'meta' => $this->meta->toArray(),
-            'additional_content' => $this->additionalContent,
+            'additional_content' => JsonMap::of($this->additionalContent),
             'raw' => $this->raw,
         ];
     }

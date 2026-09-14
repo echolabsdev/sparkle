@@ -157,7 +157,7 @@ it('maps assistant message with tool calls', function (): void {
         systemPrompts: []
     );
 
-    expect($messageMap())->toBe([
+    expect($messageMap())->toEqual([
         'contents' => [[
             'role' => 'model',
             'parts' => [
@@ -165,7 +165,7 @@ it('maps assistant message with tool calls', function (): void {
                 [
                     'functionCall' => [
                         'name' => 'search',
-                        'args' => [
+                        'args' => (object) [
                             'query' => 'Laravel collection methods',
                         ],
                     ],
@@ -192,7 +192,7 @@ it('maps assistant message with tool calls with reasoning id', function (): void
         systemPrompts: []
     );
 
-    expect($messageMap())->toBe([
+    expect($messageMap())->toEqual([
         'contents' => [[
             'role' => 'model',
             'parts' => [
@@ -200,7 +200,7 @@ it('maps assistant message with tool calls with reasoning id', function (): void
                 [
                     'functionCall' => [
                         'name' => 'search',
-                        'args' => [
+                        'args' => (object) [
                             'query' => 'Laravel collection methods',
                         ],
                     ],

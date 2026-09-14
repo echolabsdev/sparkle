@@ -1,0 +1,23 @@
+{
+    "id": "chatcmpl-struct123",
+    "object": "chat.completion",
+    "created": 1742308176,
+    "model": "gpt-4o-mini",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "{\n   \"game_time\": \"3pm\",\n   \"weather\": \"75\u00ba\",\n   \"coat_required\": false\n}"
+            },
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 172,
+        "completion_tokens": 26,
+        "total_tokens": 198
+    },
+    "system_fingerprint": "fp_abc123"
+}

@@ -1,0 +1,21 @@
+{
+    "id": "msg_01X2Qk7LtNEh4HB9xpYU57XU",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-3-5-sonnet-20240620",
+    "content": [
+        {
+            "type": "text",
+            "text": "I am an AI assistant created by Anthropic to be helpful, harmless, and honest. I don't have a physical form or avatar - I'm a language model trained to engage in conversation and help with tasks. How can I assist you today?"
+        }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+        "input_tokens": 11,
+        "output_tokens": 2820,
+        "output_tokens_details": {
+            "thinking_tokens": 1240
+        }
+    }
+}

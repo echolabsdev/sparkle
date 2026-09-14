@@ -136,6 +136,9 @@ readonly class ResponseBuilder
             thoughtTokens: $this->steps->contains(fn (Step $result): bool => $result->usage->thoughtTokens !== null)
                 ? $this->steps->sum(fn (Step $result): int => $result->usage->thoughtTokens ?? 0)
                 : null,
+            cost: $this->steps->contains(fn (Step $result): bool => $result->usage->cost !== null)
+                ? (float) $this->steps->sum(fn (Step $result): float => $result->usage->cost ?? 0.0)
+                : null,
         );
     }
 }

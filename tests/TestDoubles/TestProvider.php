@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Tests\TestDoubles;
 
 use Generator;
+use Prism\Prism\Audio\ProviderIdResponse;
+use Prism\Prism\Audio\SpeechToTextAsyncRequest;
+use Prism\Prism\Audio\SpeechToTextRequest;
+use Prism\Prism\Audio\TextResponse as AudioTextResponse;
 use Prism\Prism\Embeddings\Request as EmbeddingRequest;
 use Prism\Prism\Embeddings\Response as EmbeddingResponse;
 use Prism\Prism\Enums\FinishReason;
@@ -24,7 +28,7 @@ use Prism\Prism\ValueObjects\Usage;
 
 class TestProvider extends Provider
 {
-    public StructuredRequest|TextRequest|EmbeddingRequest|ImageRequest $request;
+    public StructuredRequest|TextRequest|EmbeddingRequest|ImageRequest|SpeechToTextRequest|SpeechToTextAsyncRequest $request;
 
     /** @var array<string, mixed> */
     public array $clientOptions;
@@ -32,7 +36,7 @@ class TestProvider extends Provider
     /** @var array<mixed> */
     public array $clientRetry;
 
-    /** @var array<int, StructuredResponse|TextResponse|EmbeddingResponse|ImageResponse> */
+    /** @var array<int, StructuredResponse|TextResponse|EmbeddingResponse|ImageResponse|AudioTextResponse|ProviderIdResponse> */
     public array $responses = [];
 
     public $callCount = 0;
@@ -115,7 +119,27 @@ class TestProvider extends Provider
         throw PrismException::unsupportedProviderAction(__METHOD__, class_basename($this));
     }
 
-    public function withResponse(StructuredResponse|TextResponse $response): Provider
+    #[\Override]
+    public function speechToTextProviderId(SpeechToTextRequest $request): ProviderIdResponse
+    {
+        $this->callCount++;
+
+        $this->request = $request;
+
+        return $this->responses[$this->callCount - 1] ?? new ProviderIdResponse('provider-id');
+    }
+
+    #[\Override]
+    public function speechToTextAsync(SpeechToTextAsyncRequest $request): AudioTextResponse
+    {
+        $this->callCount++;
+
+        $this->request = $request;
+
+        return $this->responses[$this->callCount - 1] ?? new AudioTextResponse('Async transcript');
+    }
+
+    public function withResponse(StructuredResponse|TextResponse|EmbeddingResponse|ImageResponse|AudioTextResponse|ProviderIdResponse $response): Provider
     {
         $this->responses[] = $response;
 

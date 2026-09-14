@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prism\Prism\Streaming\Events;
 
 use Prism\Prism\Enums\StreamEventType;
+use Prism\Prism\Support\JsonMap;
 
 readonly class ProviderToolEvent extends StreamEvent
 {
@@ -45,7 +46,7 @@ readonly class ProviderToolEvent extends StreamEvent
             'tool_type' => $this->toolType,
             'status' => $this->status,
             'item_id' => $this->itemId,
-            'data' => $this->data,
+            'data' => JsonMap::of($this->data),
         ];
     }
 }

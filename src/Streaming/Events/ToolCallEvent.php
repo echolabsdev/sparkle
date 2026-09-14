@@ -33,7 +33,7 @@ readonly class ToolCallEvent extends StreamEvent
             'timestamp' => $this->timestamp,
             'tool_id' => $this->toolCall->id,
             'tool_name' => $this->toolCall->name,
-            'arguments' => $this->toolCall->arguments(),
+            'arguments' => $this->toolCall->argumentsAsObject(),
             'message_id' => $this->messageId,
             'reasoning_id' => $this->toolCall->reasoningId,
         ];

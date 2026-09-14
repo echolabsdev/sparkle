@@ -1,0 +1,23 @@
+{
+  "id": "chatcmpl-tool2",
+  "object": "chat.completion",
+  "created": 1730033816,
+  "model": "gpt-4o-mini",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The weather in Detroit is 75\u00b0 and sunny. No coat needed!"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 100,
+    "completion_tokens": 15,
+    "total_tokens": 115
+  },
+  "system_fingerprint": "fp_abc123"
+}

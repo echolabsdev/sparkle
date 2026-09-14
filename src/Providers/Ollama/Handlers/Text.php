@@ -7,8 +7,6 @@ namespace Prism\Prism\Providers\Ollama\Handlers;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Prism\Prism\Concerns\CallsTools;
-use Prism\Prism\Enums\FinishReason;
-use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Providers\Ollama\Concerns\MapsFinishReason;
 use Prism\Prism\Providers\Ollama\Concerns\ValidatesResponse;
 use Prism\Prism\Providers\Ollama\Maps\MessageMap;
@@ -39,6 +37,8 @@ class Text
 
     public function handle(Request $request): Response
     {
+        $this->resolveToolApprovals($request);
+
         $data = $this->sendRequest($request);
 
         $this->validateResponse($data);
@@ -48,16 +48,7 @@ class Text
             return $this->handleToolCalls($data, $request);
         }
 
-        $finishReason = $this->mapFinishReason($data);
-
-        return match ($finishReason) {
-            FinishReason::Stop,
-            FinishReason::Length,
-            FinishReason::Unknown,
-            FinishReason::ContentFilter,
-            FinishReason::Other => $this->handleStop($data, $request),
-            default => throw new PrismException('Ollama: unknown finish reason'),
-        };
+        return $this->handleStop($data, $request);
     }
 
     /**
@@ -77,7 +68,9 @@ class Text
                 'tools' => ToolMap::map($request->tools()),
                 'stream' => false,
                 ...Arr::whereNotNull([
-                    'think' => $request->providerOptions('thinking'),
+                    'think' => $request->providerOptions('thinking') ?? (
+                        $request->reasoningEnabled() === false ? false : null
+                    ),
                     'keep_alive' => $request->providerOptions('keep_alive'),
                 ]),
                 'options' => Arr::whereNotNull(array_merge([
@@ -97,18 +90,21 @@ class Text
     {
         $toolCalls = $this->mapToolCalls(data_get($data, 'message.tool_calls', []));
 
-        $toolResults = $this->callTools($request->tools(), $toolCalls);
+        $hasPendingToolCalls = false;
+        $approvalRequests = [];
+        $toolResults = $this->callToolsWithPending($request->tools(), $toolCalls, $hasPendingToolCalls, $approvalRequests);
 
         $this->addStep($data, $request, $toolResults);
 
         $request->addMessage(new AssistantMessage(
             data_get($data, 'message.content') ?? '',
             $toolCalls,
+            toolApprovalRequests: $approvalRequests,
         ));
         $request->addMessage(new ToolResultMessage($toolResults));
         $request->resetToolChoice();
 
-        if ($this->shouldContinue($request)) {
+        if (! $hasPendingToolCalls && $this->shouldContinue($request)) {
             return $this->handle($request);
         }
 

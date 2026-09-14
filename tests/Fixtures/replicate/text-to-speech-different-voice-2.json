@@ -1,0 +1,28 @@
+{
+    "id": "ycn6jmn7dhrga0ct9g7tcerq78",
+    "model": "jaaari\/kokoro-82m",
+    "version": "f559560eb822dc509045f3921a1921234918b91739db4bf3daab2169b71c7a13",
+    "input": {
+        "text": "Testing echo voice",
+        "voice": "af_bella"
+    },
+    "logs": "Processing text (18 chars) with voice='af_bella' at speed=1.0\n",
+    "output": "https:\/\/replicate.delivery\/czjl\/qOcZefVidKqH9kSKfslNXX6avZ4Zl1zgpPAYZUOTfa80U7WWB\/output.wav",
+    "data_removed": false,
+    "error": null,
+    "source": "api",
+    "status": "succeeded",
+    "created_at": "2025-11-03T23:31:25.676Z",
+    "started_at": "2025-11-03T23:31:25.691010209Z",
+    "completed_at": "2025-11-03T23:31:25.827174994Z",
+    "urls": {
+        "cancel": "https:\/\/api.replicate.com\/v1\/predictions\/ycn6jmn7dhrga0ct9g7tcerq78\/cancel",
+        "get": "https:\/\/api.replicate.com\/v1\/predictions\/ycn6jmn7dhrga0ct9g7tcerq78",
+        "stream": "https:\/\/stream.replicate.com\/v1\/files\/fddq-adq3w32ed3kuc63337nzopuga2rarb2iiglu7gv6zivdyg6mra3a",
+        "web": "https:\/\/replicate.com\/p\/ycn6jmn7dhrga0ct9g7tcerq78"
+    },
+    "metrics": {
+        "predict_time": 0.13616481,
+        "total_time": 0.151174994
+    }
+}

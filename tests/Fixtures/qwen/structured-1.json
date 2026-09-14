@@ -1,0 +1,1 @@
+{"status_code": 200, "request_id": "c566fb8b-d0a3-92d0-b77a-ae1496d9f32f", "code": "", "message": "", "output": {"choices": [{"message": {"content": "{\n    \"weather\": \"75º\",\n    \"game_time\": \"3pm\",\n    \"coat_required\": false\n}", "role": "assistant"}, "finish_reason": "stop"}]}, "usage": {"input_tokens": 216, "output_tokens": 27, "total_tokens": 243}}

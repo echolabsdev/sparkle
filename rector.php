@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Prism\Prism\Rectors\ReorderMethodsRector;
+use Prism\Dev\Rectors\ReorderMethodsRector;
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;

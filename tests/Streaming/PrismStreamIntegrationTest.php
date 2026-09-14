@@ -1011,4 +1011,86 @@ describe('step events', function (): void {
             expect($array)->toHaveKey('timestamp');
         }
     });
+
+    it('step finish event has default zero usage when fake response has no explicit usage', function (): void {
+        Prism::fake([
+            TextResponseFake::make()->withText('Test'),
+        ]);
+
+        $events = iterator_to_array(
+            Prism::text()
+                ->using('openai', 'gpt-4')
+                ->withPrompt('Test')
+                ->asStream()
+        );
+
+        $stepFinishEvents = array_values(array_filter(
+            $events,
+            fn (StreamEvent $e): bool => $e instanceof StepFinishEvent
+        ));
+
+        expect($stepFinishEvents)->not->toBeEmpty();
+        expect($stepFinishEvents[0]->usage)->not->toBeNull();
+        expect($stepFinishEvents[0]->usage->promptTokens)->toBe(0);
+        expect($stepFinishEvents[0]->usage->completionTokens)->toBe(0);
+    });
+
+    it('step finish event contains usage when fake response has usage', function (): void {
+        Prism::fake([
+            TextResponseFake::make()
+                ->withText('Test')
+                ->withUsage(new Usage(100, 50)),
+        ]);
+
+        $events = iterator_to_array(
+            Prism::text()
+                ->using('openai', 'gpt-4')
+                ->withPrompt('Test')
+                ->asStream()
+        );
+
+        $stepFinishEvents = array_values(array_filter(
+            $events,
+            fn (StreamEvent $e): bool => $e instanceof StepFinishEvent
+        ));
+
+        expect($stepFinishEvents)->not->toBeEmpty();
+        expect($stepFinishEvents[0]->usage)->not->toBeNull();
+        expect($stepFinishEvents[0]->usage->promptTokens)->toBe(100);
+        expect($stepFinishEvents[0]->usage->completionTokens)->toBe(50);
+    });
+
+    it('step finish event toArray includes usage when set', function (): void {
+        Prism::fake([
+            TextResponseFake::make()
+                ->withText('Test')
+                ->withUsage(new Usage(20, 10)),
+        ]);
+
+        $events = iterator_to_array(
+            Prism::text()
+                ->using('openai', 'gpt-4')
+                ->withPrompt('Test')
+                ->asStream()
+        );
+
+        $stepFinishEvents = array_values(array_filter(
+            $events,
+            fn (StreamEvent $e): bool => $e instanceof StepFinishEvent
+        ));
+
+        expect($stepFinishEvents)->not->toBeEmpty();
+        $array = $stepFinishEvents[0]->toArray();
+        expect($array)->toHaveKey('usage');
+        expect($array['usage'])->not->toBeNull();
+        expect($array['usage']['prompt_tokens'])->toBe(20);
+        expect($array['usage']['completion_tokens'])->toBe(10);
+    });
+
+    it('step finish event toArray has null usage when event is constructed without usage', function (): void {
+        $event = new StepFinishEvent(id: 'test-id', timestamp: 1234567890);
+        $array = $event->toArray();
+        expect($array)->toHaveKey('usage');
+        expect($array['usage'])->toBeNull();
+    });
 });

@@ -187,6 +187,28 @@ it('does not include think parameter when not provided for streaming', function 
     });
 });
 
+it('sends think:false on stream when withReasoning(false) is used', function (): void {
+    FixtureResponse::fakeStreamResponses('api/chat', 'ollama/stream-without-thinking');
+
+    $response = Prism::text()
+        ->using('ollama', 'gpt-oss')
+        ->withPrompt('Test prompt')
+        ->withReasoning(false)
+        ->asStream();
+
+    foreach ($response as $chunk) {
+        break;
+    }
+
+    Http::assertSent(function (Request $request): true {
+        $body = $request->data();
+        expect($body)->toHaveKey('think');
+        expect($body['think'])->toBe(false);
+
+        return true;
+    });
+});
+
 it('includes keep_alive parameter when provided for streaming', function (): void {
     FixtureResponse::fakeStreamResponses('api/chat', 'ollama/stream-without-thinking');
 

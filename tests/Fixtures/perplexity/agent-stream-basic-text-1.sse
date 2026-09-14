@@ -1,0 +1,52 @@
+data: {"type": "response.output_text.delta", "delta": "I"}
+
+data: {"type": "response.output_text.delta", "delta": " am Qwen, a large"}
+
+data: {"type": "response.output_text.delta", "delta": "-scale language"}
+
+data: {"type": "response.output_text.delta", "delta": " model developed by Alibaba"}
+
+data: {"type": "response.output_text.delta", "delta": " Cloud's Tong"}
+
+data: {"type": "response.output_text.delta", "delta": "yi Lab"}
+
+data: {"type": "response.output_text.delta", "delta": ". I am not a human"}
+
+data: {"type": "response.output_text.delta", "delta": " but an"}
+
+data: {"type": "response.output_text.delta", "delta": " AI assistant designed to provide"}
+
+data: {"type": "response.output_text.delta", "delta": " help and"}
+
+data: {"type": "response.output_text.delta", "delta": " support in areas"}
+
+data: {"type": "response.output_text.delta", "delta": " such as technology, culture"}
+
+data: {"type": "response.output_text.delta", "delta": ", and life"}
+
+data: {"type": "response.output_text.delta", "delta": ". I can answer"}
+
+data: {"type": "response.output_text.delta", "delta": " questions, create"}
+
+data: {"type": "response.output_text.delta", "delta": " text such"}
+
+data: {"type": "response.output_text.delta", "delta": " as stories, official documents"}
+
+data: {"type": "response.output_text.delta", "delta": ", emails, scripts"}
+
+data: {"type": "response.output_text.delta", "delta": ", logical reasoning"}
+
+data: {"type": "response.output_text.delta", "delta": ", programming, and more, as"}
+
+data: {"type": "response.output_text.delta", "delta": " well as express opinions"}
+
+data: {"type": "response.output_text.delta", "delta": " and play games. I"}
+
+data: {"type": "response.output_text.delta", "delta": " am here to assist you anytime."}
+
+data: {"type": "response.output_text.delta", "delta": " Is there anything I"}
+
+data: {"type": "response.output_text.delta", "delta": " can help you with?"}
+
+data: {"type": "response.completed", "status": "completed", "id": "2aac4169-004c-48c6-8da3-bb9d4db974bb", "model": "sonar", "usage": {"input_tokens": 4, "output_tokens": 97, "total_tokens": 101}, "output": [{"type": "search_results", "results": [{"title": "What is an AI Assistant? Definition, Types, Productivity - Simpplr", "url": "https://www.simpplr.com/glossary/ai-assistant/", "date": "2025-07-14", "last_updated": "2025-11-23", "snippet": "An AI Assistant is a software application that uses artificial intelligence to perform tasks and provide support in real-time, mimicking human-like interaction.", "source": "web"}, {"title": "The Who Who Are You - YouTube", "url": "https://www.youtube.com/watch?v=MTWD52ny0Wk", "date": "2014-12-30", "last_updated": "2025-07-26", "snippet": "Another Who's epic from \"Who Are You\" (1979), the last Who's album featuring Keith Moon on drums. We miss you Keith. Rest in Peace.", "source": "web"}, {"title": "What is an AI assistant? |Definition from TechTarget", "url": "https://www.techtarget.com/searchcustomerexperience/definition/virtual-assistant-AI-assistant", "date": "2024-12-11", "last_updated": "2025-11-23", "snippet": "An AI assistant, or digital assistant, is software that uses artificial intelligence to understand natural language voice commands and complete tasks for the ...", "source": "web"}, {"title": "Who Are You (song) - Wikipedia", "url": "https://en.wikipedia.org/wiki/Who_Are_You_(song)", "date": "2005-10-13", "last_updated": "2025-11-22", "snippet": "\"Who Are You\" is the title track on the Who's eighth studio album, Who Are You (1978), the last album released by the band before Keith Moon's death in ...", "source": "web"}, {"title": "How Does an AI Assistant Work? | Workgrid", "url": "https://www.workgrid.com/blog/ai-assistant-how-it-works/", "date": "2024-11-03", "last_updated": "2025-11-23", "snippet": "An AI Assistant, also known as an enterprise copilot, virtual assistant, or digital assistant, is a cutting-edge technology that leverages ...", "source": "web"}, {"title": "Who Are You - Wikipedia", "url": "https://en.wikipedia.org/wiki/Who_Are_You", "date": "2004-10-05", "last_updated": "2025-11-22", "snippet": "Who Are You is the eighth studio album by the English rock band the Who, released on 18 August 1978 [1] by Polydor Records in the United Kingdom", "source": "web"}, {"title": "What Is an AI Assistant? Definition, Types & Best Examples - Gmelius", "url": "https://gmelius.com/blog/what-is-an-ai-assistant", "date": "2025-09-23", "last_updated": "2025-11-23", "snippet": "An AI assistant is a software agent that leverages artificial intelligence, typically natural language processing (NLP), machine learning (ML), and sometimes ...", "source": "web"}, {"title": "The Who - Who Are You (Promo Video) - YouTube", "url": "https://www.youtube.com/watch?v=PNbBDrceCy8", "date": "2019-10-17", "last_updated": "2025-11-23", "snippet": "A promo film for The Who's 1978 single 'Who Are You' from the album of the same name. Filmed at The Who's Ramport Studios in Battersea, ...", "source": "web"}, {"title": "What is an AI Assistant? Everything Businesses Need to Know", "url": "https://www.moveworks.com/us/en/resources/blog/what-is-an-ai-assistant", "date": "2025-03-07", "last_updated": "2025-11-23", "snippet": "An AI assistant is a conversational AI interface using LLMs, NLP, generative AI, and machine learning to perform tasks, understanding text and ...", "source": "web"}, {"title": "Who Are You - YouTube", "url": "https://www.youtube.com/watch?v=LYb_nqU_43w", "date": "2018-08-10", "last_updated": "2025-11-23", "snippet": "Provided to YouTube by Universal Music Group Who Are You · The Who Who Are You ℗ 1978 Polydor Ltd. (UK) Released on: 1978-08-18 Producer: ...", "source": "web"}, {"title": "What Is an AI Assistant? 12 Capabilities You Need to Know - Lindy", "url": "https://www.lindy.ai/blog/what-is-an-ai-assistant", "date": "2025-05-19", "last_updated": "2025-11-23", "snippet": "An AI assistant is software using AI, natural language processing, and machine learning to understand natural English and respond helpfully.", "source": "web"}, {"title": "Who Are You - song and lyrics by The Who - Spotify", "url": "https://open.spotify.com/track/3x2bXiU0o4WbsPkawXlfDA", "last_updated": "2023-12-23", "snippet": "Listen to Who Are You on Spotify. Song · The Who · 1978.", "source": "web"}, {"title": "AI Agents vs. AI Assistants - IBM", "url": "https://www.ibm.com/think/topics/ai-agents-vs-ai-assistants", "date": "2024-10-29", "last_updated": "2025-11-23", "snippet": "AI assistants are reactive, performing tasks at request, while AI agents are proactive, working autonomously to achieve a goal.", "source": "web"}, {"title": "The iconic album 'WHO ARE YOU' to be released as a Super Deluxe ...", "url": "https://www.thewho.com/who-are-you-to-be-released-as-a-super-deluxe-edition/", "date": "2025-09-02", "last_updated": "2025-11-23", "snippet": "Initially released in August 1978, WHO ARE YOU marked a significant chapter in The Who's career while a commercial triumph, peaking at No. 2 on ...", "source": "web"}, {"title": "AI Assistants: What They Are How They Help Businesses - Slack", "url": "https://slack.com/blog/transformation/ai-assistants-what-they-do-and-why-you-need-them", "date": "2024-01-01", "last_updated": "2025-11-23", "snippet": "An AI assistant is a software application that uses machine learning, natural language processing, and large language models to provide accurate information and ...", "source": "web"}, {"title": "The Who - Who Are You (Full Album) - YouTube", "url": "https://www.youtube.com/playlist?list=PLBnJv6rImVe-gowVe9xC0YhXpsNoMBsBk", "date": "2025-03-24", "last_updated": "2025-03-26", "snippet": "The Who - Who Are You (Full Album) · New Song · Had Enough · 905 · Sister Disco · Music Must Change · Trick Of The Light · Guitar And Pen · Love Is Coming Down.", "source": "web"}, {"title": "AI Assistant: Boost Personal and Work Productivity - Aisera", "url": "https://aisera.com/chatbots-virtual-assistants-conversational-ai/", "date": "2025-11-14", "last_updated": "2025-11-23", "snippet": "An AI Assistant, also known as a virtual assistant, is a software application that uses artificial intelligence to talk to users in natural language, ...", "source": "web"}]}, {"type": "message", "content": [{"type": "output_text", "text": "I am Qwen, a large-scale language model developed by Alibaba Cloud's Tongyi Lab. I am not a human but an AI assistant designed to provide help and support in areas such as technology, culture, and life. I can answer questions, create text such as stories, official documents, emails, scripts, logical reasoning, programming, and more, as well as express opinions and play games. I am here to assist you anytime. Is there anything I can help you with?"}]}], "error": null}
+

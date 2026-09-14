@@ -1,0 +1,1 @@
+{"id":"msg_01RefusalExample","type":"message","role":"assistant","model":"claude-3-5-sonnet-20240620","content":[{"type":"text","text":""}],"stop_reason":"refusal","stop_sequence":null,"usage":{"input_tokens":12,"output_tokens":0}}

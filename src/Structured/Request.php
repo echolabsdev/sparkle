@@ -7,6 +7,7 @@ namespace Prism\Prism\Structured;
 use Closure;
 use Prism\Prism\Concerns\ChecksSelf;
 use Prism\Prism\Concerns\HasProviderOptions;
+use Prism\Prism\Concerns\HasReasoning;
 use Prism\Prism\Contracts\Message;
 use Prism\Prism\Contracts\PrismRequest;
 use Prism\Prism\Contracts\Schema;
@@ -18,7 +19,7 @@ use Prism\Prism\ValueObjects\ProviderTool;
 
 class Request implements PrismRequest
 {
-    use ChecksSelf, HasProviderOptions;
+    use ChecksSelf, HasProviderOptions, HasReasoning;
 
     /**
      * @param  SystemMessage[]  $systemPrompts
@@ -38,6 +39,7 @@ class Request implements PrismRequest
         protected ?int $maxTokens,
         protected int|float|null $temperature,
         protected int|float|null $topP,
+        protected ?int $topK,
         protected array $clientOptions,
         protected array $clientRetry,
         protected Schema $schema,
@@ -47,8 +49,10 @@ class Request implements PrismRequest
         protected int $maxSteps,
         array $providerOptions = [],
         protected array $providerTools = [],
+        ?bool $reasoningEnabled = null,
     ) {
         $this->providerOptions = $providerOptions;
+        $this->reasoningEnabled = $reasoningEnabled;
     }
 
     /**
@@ -98,6 +102,11 @@ class Request implements PrismRequest
         return $this->topP;
     }
 
+    public function topK(): ?int
+    {
+        return $this->topK;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -127,6 +136,16 @@ class Request implements PrismRequest
     public function addMessage(Message $message): self
     {
         $this->messages = array_merge($this->messages, [$message]);
+
+        return $this;
+    }
+
+    /**
+     * @param  Message[]  $messages
+     */
+    public function setMessages(array $messages): self
+    {
+        $this->messages = $messages;
 
         return $this;
     }

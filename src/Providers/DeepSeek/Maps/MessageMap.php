@@ -95,14 +95,14 @@ class MessageMap
             'type' => 'function',
             'function' => [
                 'name' => $toolCall->name,
-                'arguments' => json_encode($toolCall->arguments() ?: (object) []),
+                'arguments' => $toolCall->argumentsAsJson(),
             ],
         ], $message->toolCalls);
 
-        $this->mappedMessages[] = array_filter([
+        $this->mappedMessages[] = array_filter(array_merge([
             'role' => 'assistant',
             'content' => $message->content,
             'tool_calls' => $toolCalls,
-        ]);
+        ], $message->additionalContent));
     }
 }

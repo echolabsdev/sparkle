@@ -7,6 +7,7 @@ namespace Prism\Prism\Structured;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 use Prism\Prism\Enums\FinishReason;
+use Prism\Prism\Support\JsonMap;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\ProviderToolCall;
 use Prism\Prism\ValueObjects\ToolCall;
@@ -57,7 +58,7 @@ readonly class Response implements Arrayable
             'tool_calls' => array_map(fn (ToolCall $toolCall): array => $toolCall->toArray(), $this->toolCalls),
             'provider_tool_calls' => array_map(fn (ProviderToolCall $providerToolCall): array => $providerToolCall->toArray(), $this->providerToolCalls),
             'tool_results' => array_map(fn (ToolResult $toolResult): array => $toolResult->toArray(), $this->toolResults),
-            'additional_content' => $this->additionalContent,
+            'additional_content' => JsonMap::of($this->additionalContent),
             'raw' => $this->raw,
         ];
     }

@@ -18,6 +18,7 @@ use Prism\Prism\Exceptions\PrismProviderOverloadedException;
 use Prism\Prism\Exceptions\PrismRateLimitedException;
 use Prism\Prism\Images\Request as ImagesRequest;
 use Prism\Prism\Images\Response as ImagesResponse;
+use Prism\Prism\Providers\Gemini\Concerns\ProcessesRateLimits;
 use Prism\Prism\Providers\Gemini\Handlers\Audio;
 use Prism\Prism\Providers\Gemini\Handlers\Cache;
 use Prism\Prism\Providers\Gemini\Handlers\Embeddings;
@@ -36,6 +37,7 @@ use Prism\Prism\ValueObjects\Messages\SystemMessage;
 class Gemini extends Provider
 {
     use InitializesClient;
+    use ProcessesRateLimits;
 
     public function __construct(
         #[\SensitiveParameter] public readonly string $apiKey,
@@ -110,8 +112,13 @@ class Gemini extends Provider
 
     public function handleRequestException(string $model, RequestException $e): never
     {
+        $responseData = $e->response->json() ?? [];
+
         match ($e->response->getStatusCode()) {
-            429 => throw PrismRateLimitedException::make([]),
+            429 => throw PrismRateLimitedException::make(
+                rateLimits: $this->processRateLimits($responseData),
+                retryAfter: $this->extractRetryAfterSeconds($responseData)
+            ),
             503 => throw PrismProviderOverloadedException::make(class_basename($this)),
             default => $this->handleResponseErrors($e),
         };

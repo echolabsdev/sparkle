@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "id": "file-abc123",
+      "type": "file",
+      "filename": "data.jsonl",
+      "mime_type": "application/jsonl",
+      "size_bytes": 1024,
+      "created_at": "2026-03-14T16:01:43.705811+00:00",
+      "downloadable": true
+    },
+    {
+      "id": "file-def456",
+      "type": "file",
+      "filename": "output.jsonl",
+      "mime_type": "application/jsonl",
+      "size_bytes": 2048,
+      "created_at": "2026-03-14T16:05:00.000000+00:00",
+      "downloadable": true
+    }
+  ],
+  "has_more": false,
+  "first_id": "file-abc123",
+  "last_id": "file-def456"
+}

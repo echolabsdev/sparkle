@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Providers\Mistral;
 
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Prism\Prism\Enums\FinishReason;
 use Prism\Prism\Enums\Provider;
@@ -245,6 +246,32 @@ it('verifies correct request structure for streaming', function (): void {
         expect($data['messages'][0]['content'][0]['text'])->toBe('Test');
 
         return true;
+    });
+});
+
+it('forwards reasoning_effort provider option for streaming requests', function (): void {
+    Http::fake([
+        '*' => Http::response(
+            "data: {\"choices\": [{\"delta\": {\"content\": \"Hello\"}}]}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" world\"}, \"finish_reason\": \"stop\"}]}\n\n",
+            200,
+            ['Content-Type' => 'text/event-stream']
+        ),
+    ])->preventStrayRequests();
+
+    Prism::text()
+        ->using(Provider::Mistral, 'mistral-small-latest')
+        ->withPrompt('Test')
+        ->withProviderOptions([
+            'reasoning_effort' => 'high',
+        ])
+        ->asStream()
+        ->current();
+
+    Http::assertSent(function (Request $request): bool {
+        $data = $request->data();
+
+        return isset($data['reasoning_effort'])
+            && $data['reasoning_effort'] === 'high';
     });
 });
 

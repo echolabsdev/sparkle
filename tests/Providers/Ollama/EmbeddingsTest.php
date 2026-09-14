@@ -83,6 +83,13 @@ it('allows setting provider options like dimensions', function (): void {
         ->fromInput('The food was delicious and the waiter...')
         ->asEmbeddings();
 
+    Http::assertSent(function (Request $request): true {
+        expect($request->data()['dimensions'])->toBe(256);
+        expect($request->data())->not->toHaveKeys(['options']);
+
+        return true;
+    });
+
     $embeddings = json_decode(
         file_get_contents('tests/Fixtures/ollama/embeddings-with-dimensions-1.json'),
         true

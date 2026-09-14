@@ -329,6 +329,68 @@ it('maps user messages with documents from base64', function (): void {
         ->toContain(base64_encode(file_get_contents('tests/Fixtures/test-pdf.pdf')));
 });
 
+it('maps assistant message with reasoning', function (): void {
+    $messageMap = new MessageMap(
+        messages: [
+            new AssistantMessage('The answer is 4.', [], [
+                'reasoning' => 'Let me think step by step. 2 + 2 = 4.',
+            ]),
+        ],
+        systemPrompts: []
+    );
+
+    expect($messageMap())->toBe([[
+        'role' => 'assistant',
+        'content' => 'The answer is 4.',
+        'reasoning' => 'Let me think step by step. 2 + 2 = 4.',
+    ]]);
+});
+
+it('maps assistant message with reasoning_details', function (): void {
+    $reasoningDetails = [
+        [
+            'type' => 'reasoning.encrypted',
+            'data' => 'gAAAAABo71-Jjh1ipTHmxLg2Jub6BwOV',
+            'id' => 'rs_045e88aab38b',
+            'format' => 'openai-responses-v1',
+            'index' => 0,
+        ],
+    ];
+
+    $messageMap = new MessageMap(
+        messages: [
+            new AssistantMessage('The answer is 4.', [], [
+                'reasoning_details' => $reasoningDetails,
+            ]),
+        ],
+        systemPrompts: []
+    );
+
+    expect($messageMap())->toBe([[
+        'role' => 'assistant',
+        'content' => 'The answer is 4.',
+        'reasoning_details' => $reasoningDetails,
+    ]]);
+});
+
+it('maps assistant message without reasoning when additionalContent is empty', function (): void {
+    $messageMap = new MessageMap(
+        messages: [
+            new AssistantMessage('Hello'),
+        ],
+        systemPrompts: []
+    );
+
+    $mapped = $messageMap();
+
+    expect($mapped[0])->not->toHaveKey('reasoning');
+    expect($mapped[0])->not->toHaveKey('reasoning_details');
+    expect($mapped[0])->toBe([
+        'role' => 'assistant',
+        'content' => 'Hello',
+    ]);
+});
+
 it('maps user messages with documents from url', function (): void {
     $messageMap = new MessageMap(
         messages: [

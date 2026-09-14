@@ -147,6 +147,32 @@ it('sends correct schema in payload using tool mode', function (): void {
     });
 });
 
+it('does not force the structured output tool beside a thinking shape Prism does not spell', function (): void {
+    // Anthropic refuses a forced tool_choice with thinking on. The check used to
+    // recognise only Prism's spellings, which were the only ones sent; any shape
+    // is sent now, so any shape that turns thinking on has to count.
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-sonnet-4-6')
+        ->withMessages([new UserMessage('What is the weather?')])
+        ->withSchema(new ObjectSchema('weather', 'Weather information', [new StringSchema('condition', 'Weather condition')], ['condition']))
+        ->withProviderOptions([
+            'use_tool_calling' => true,
+            'thinking' => ['type' => 'enabled', 'budget_tokens' => 2048],
+        ])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): bool {
+        $payload = $request->data();
+
+        expect($payload['thinking'])->toBe(['type' => 'enabled', 'budget_tokens' => 2048])
+            ->and($payload)->not->toHaveKey('tool_choice');
+
+        return true;
+    });
+});
+
 it('sends correct temperature and top_p in payload', function (): void {
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
 
@@ -207,7 +233,111 @@ it('sends correct max_tokens in payload', function (): void {
     });
 });
 
-it('sends correct thinking mode in payload', function (): void {
+it('sends correct adaptive thinking mode in payload', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured-with-extending-thinking');
+
+    $schema = new ObjectSchema(
+        'calculation',
+        'Math calculation result',
+        [
+            'result' => new StringSchema('result', 'The calculation result'),
+        ],
+        ['result']
+    );
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-3-5-haiku-latest')
+        ->withMessages([new UserMessage('Solve this math problem: 2+2')])
+        ->withSchema($schema)
+        ->withProviderOptions([
+            'thinking' => [
+                'type' => 'adaptive',
+            ],
+        ])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): bool {
+        $payload = $request->data();
+
+        expect($payload)->toHaveKey('thinking');
+        expect($payload['thinking'])->toBe([
+            'type' => 'adaptive',
+        ]);
+
+        return true;
+    });
+});
+
+it('merges effort into output_config with format for native structured output', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
+
+    $schema = new ObjectSchema(
+        'data',
+        'Data object',
+        [
+            'value' => new StringSchema('value', 'A value'),
+        ],
+        ['value']
+    );
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-3-5-haiku-latest')
+        ->withMessages([new UserMessage('Generate data')])
+        ->withSchema($schema)
+        ->withProviderOptions([
+            'effort' => 'high',
+        ])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request) use ($schema): bool {
+        $payload = $request->data();
+
+        expect($payload['output_config'])->toBe([
+            'effort' => 'high',
+            'format' => [
+                'type' => 'json_schema',
+                'schema' => $schema->toArray(),
+            ],
+        ]);
+
+        return true;
+    });
+});
+
+it('sends effort in output_config with tool calling mode', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
+
+    $schema = new ObjectSchema(
+        'data',
+        'Data object',
+        [
+            'value' => new StringSchema('value', 'A value'),
+        ],
+        ['value']
+    );
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-3-5-haiku-latest')
+        ->withMessages([new UserMessage('Generate data')])
+        ->withSchema($schema)
+        ->withProviderOptions([
+            'effort' => 'high',
+            'use_tool_calling' => true,
+        ])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): bool {
+        $payload = $request->data();
+
+        expect($payload['output_config'])->toBe([
+            'effort' => 'high',
+        ]);
+
+        return true;
+    });
+});
+
+it('sends correct legacy thinking mode in payload', function (): void {
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured-with-extending-thinking');
 
     $schema = new ObjectSchema(
@@ -242,6 +372,23 @@ it('sends correct thinking mode in payload', function (): void {
 
         return true;
     });
+});
+
+it('takes the default thinking budget from the documented config key', function (): void {
+    config()->set('prism.providers.anthropic.default_thinking_budget', 3000);
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-3-5-haiku-latest')
+        ->withMessages([new UserMessage('Solve this math problem: 2+2')])
+        ->withSchema(new ObjectSchema('simple', 'Simple object', [new StringSchema('data', 'Some data')], ['data']))
+        ->withProviderOptions(['thinking' => ['enabled' => true]])
+        ->asStructured();
+
+    Http::assertSent(fn (Request $request): bool => $request->data()['thinking'] === [
+        'type' => 'enabled',
+        'budget_tokens' => 3000,
+    ]);
 });
 
 it('sends correct mcp_servers', function (): void {

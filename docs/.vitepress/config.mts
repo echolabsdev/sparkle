@@ -114,6 +114,10 @@ export default defineConfig({
                 link: "/core-concepts/tools-function-calling",
               },
               {
+                text: "Human-in-the-Loop",
+                link: "/core-concepts/human-in-the-loop",
+              },
+              {
                 text: "Structured Output",
                 link: "/core-concepts/structured-output",
               },
@@ -132,6 +136,14 @@ export default defineConfig({
               {
                 text: "Audio",
                 link: "/core-concepts/audio",
+              },
+              {
+                text: "Batch Processing",
+                link: "/core-concepts/batch",
+              },
+              {
+                text: "Files",
+                link: "/core-concepts/files",
               },
               {
                 text: "Schemas",
@@ -212,6 +224,18 @@ export default defineConfig({
                 link: "/providers/openrouter",
               },
               {
+                text: "Replicate",
+                link: "/providers/replicate",
+              },
+              {
+                text: "Qwen",
+                link: "/providers/qwen",
+              },
+              {
+                text: "Requesty",
+                link: "/providers/requesty",
+              },
+              {
                 text: "Voyage AI",
                 link: "/providers/voyageai",
               },
@@ -248,15 +272,48 @@ export default defineConfig({
                 text: "Provider Interoperability",
                 link: "/advanced/provider-interoperability",
               },
+              {
+                text: "Telemetry",
+                link: "/advanced/telemetry",
+              },
             ],
           },
           {
-            text: "Packages",
+            text: "Companion Packages",
             items: [
               {
-                text: "Relay",
-                link: "https://github.com/prism-php/relay",
+                text: "Overview",
+                link: "/companion-packages/",
               },
+              {
+                text: "Harness (RC)",
+                link: "/companion-packages/harness",
+              },
+              {
+                text: "MCP",
+                link: "/companion-packages/mcp",
+              },
+              {
+                text: "Memory",
+                link: "/companion-packages/memory",
+              },
+              {
+                text: "Workspace",
+                link: "/companion-packages/workspace",
+              },
+              {
+                text: "Perplexity",
+                link: "https://github.com/Particle-Academy/prism-perplexity",
+              },
+              {
+                text: "OpenTelemetry",
+                link: "/advanced/telemetry",
+              },
+            ],
+          },
+          {
+            text: "Other Packages",
+            items: [
               {
                 text: "Bedrock",
                 link: "https://github.com/prism-php/bedrock",

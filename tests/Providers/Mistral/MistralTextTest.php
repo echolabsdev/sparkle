@@ -162,6 +162,25 @@ describe('Text generation', function (): void {
         expect($response->steps->last())
             ->additionalContent->thinking->toBe($expectedThinking);
     });
+
+    it('forwards reasoning_effort provider option', function (): void {
+        FixtureResponse::fakeResponseSequence('v1/chat/completions', 'mistral/generate-text-with-a-prompt');
+
+        Prism::text()
+            ->using(Provider::Mistral, 'mistral-small-latest')
+            ->withPrompt('Who are you?')
+            ->withProviderOptions([
+                'reasoning_effort' => 'high',
+            ])
+            ->generate();
+
+        Http::assertSent(function (Request $request): bool {
+            $payload = $request->data();
+
+            return isset($payload['reasoning_effort'])
+                && $payload['reasoning_effort'] === 'high';
+        });
+    });
 });
 
 describe('Image support', function (): void {

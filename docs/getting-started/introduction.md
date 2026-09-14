@@ -62,6 +62,19 @@ $response = Prism::text()
 
 echo $response->text;
 ```
+
+```php [Replicate]
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
+
+$response = Prism::text()
+    ->using(Provider::Replicate, 'meta/meta-llama-3.1-405b-instruct')
+    ->withSystemPrompt(view('prompts.system'))
+    ->withPrompt('Explain quantum computing to a 5-year-old.')
+    ->asText();
+
+echo $response->text;
+```
 :::
 
 Prism draws significant inspiration from the [Vercel AI SDK](https://sdk.vercel.ai/docs/ai-sdk-core), adapting its powerful concepts and developer-friendly approach to the Laravel ecosystem.
@@ -92,6 +105,8 @@ We currently offer first-party support for these leading AI providers:
 - [Mistral](/providers/mistral.md)
 - [Ollama](/providers/ollama.md)
 - [OpenAI](/providers/openai.md)
+- [Replicate](/providers/replicate.md)
+- [Qwen](/providers/qwen.md)
 - [xAI](/providers/xai.md)
 - [Perplexity](/providers/perplexity.md)
 

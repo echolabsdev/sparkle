@@ -18,36 +18,23 @@ it('extracts finish reason correctly from response data', function (array $data,
 
     expect((new $testClass)->testExtractsFinishReason($data))->toBe($expected);
 })->with([
-    'stop finish reason' => [
-        'data' => [
-            'choices' => [
-                ['finish_reason' => 'stop'],
-            ],
-        ],
+    // The Agent API reports a run status rather than a per-choice finish
+    // reason. Failed and cancelled runs never reach here — assertRunSucceeded
+    // throws on those first.
+    'completed run' => [
+        'data' => ['status' => 'completed'],
         'expected' => FinishReason::Stop,
     ],
-    'length finish reason (unsupported -> unknown)' => [
-        'data' => [
-            'choices' => [
-                ['finish_reason' => 'length'],
-            ],
-        ],
+    'incomplete run hit a limit' => [
+        'data' => ['status' => 'incomplete'],
+        'expected' => FinishReason::Length,
+    ],
+    'unrecognised status' => [
+        'data' => ['status' => 'something_new'],
         'expected' => FinishReason::Unknown,
     ],
-    'missing finish reason key' => [
-        'data' => [
-            'choices' => [
-                ['content' => 'Hello world'],
-            ],
-        ],
-        'expected' => FinishReason::Unknown,
-    ],
-    'null finish reason value' => [
-        'data' => [
-            'choices' => [
-                ['finish_reason' => null],
-            ],
-        ],
+    'missing status key' => [
+        'data' => ['output' => []],
         'expected' => FinishReason::Unknown,
     ],
 ]);

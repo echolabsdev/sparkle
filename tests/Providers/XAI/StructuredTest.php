@@ -155,6 +155,63 @@ it('uses meta to define strict mode', function (): void {
     });
 });
 
+it('handles content returned as object instead of string', function (): void {
+    // Some OpenAI-compatible providers (e.g. Cloudflare Workers AI) return
+    // content as a parsed object instead of a JSON string with no "parsed" field.
+    Http::fake([
+        'v1/chat/completions' => Http::response([
+            'id' => 'chatcmpl-test',
+            'object' => 'chat.completion',
+            'created' => 1731710832,
+            'model' => '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+            'choices' => [
+                [
+                    'index' => 0,
+                    'message' => [
+                        'role' => 'assistant',
+                        'content' => [
+                            'title' => 'Inception',
+                            'rating' => '4.5',
+                            'summary' => 'A mind-bending masterpiece.',
+                        ],
+                        'refusal' => null,
+                    ],
+                    'finish_reason' => 'stop',
+                ],
+            ],
+            'usage' => [
+                'prompt_tokens' => 49,
+                'completion_tokens' => 32,
+                'total_tokens' => 81,
+            ],
+        ]),
+    ]);
+
+    $schema = new ObjectSchema(
+        name: 'movie_review',
+        description: 'A structured movie review',
+        properties: [
+            new StringSchema('title', 'The movie title'),
+            new StringSchema('rating', 'Rating out of 5 stars'),
+            new StringSchema('summary', 'Brief review summary'),
+        ],
+        requiredFields: ['title', 'rating', 'summary']
+    );
+
+    $response = Prism::structured()
+        ->using(Provider::XAI, 'grok-4')
+        ->withSchema($schema)
+        ->withPrompt('Review the movie Inception')
+        ->asStructured();
+
+    expect($response->structured)
+        ->toBeArray()
+        ->and($response->structured)->toHaveKeys(['title', 'rating', 'summary'])
+        ->and($response->structured['title'])->toBe('Inception')
+        ->and($response->structured['rating'])->toBe('4.5')
+        ->and($response->structured['summary'])->toBe('A mind-bending masterpiece.');
+});
+
 it('handles empty structured response gracefully', function (): void {
     Http::fake([
         'v1/chat/completions' => Http::response([

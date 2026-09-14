@@ -168,6 +168,16 @@ test('it sets top p', function (): void {
     expect($generated->topP())->toBe(0.9);
 });
 
+test('it sets top k', function (): void {
+    $request = $this->pendingRequest
+        ->using(Provider::OpenAI, 'gpt-4')
+        ->usingTopK(40);
+
+    $generated = $request->toRequest();
+
+    expect($generated->topK())->toBe(40);
+});
+
 test('it sets max steps', function (): void {
     $request = $this->pendingRequest
         ->using(Provider::OpenAI, 'gpt-4')

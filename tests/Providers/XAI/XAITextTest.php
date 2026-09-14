@@ -338,3 +338,30 @@ it('throws a PrismRateLimitedException for a 429 response code', function (): vo
         ->asText();
 
 })->throws(PrismRateLimitedException::class);
+
+it('excludes cached tokens from promptTokens', function (): void {
+    Http::fake([
+        '*' => Http::response([
+            'id' => 'cache-test-1',
+            'model' => 'grok-2',
+            'choices' => [[
+                'index' => 0,
+                'message' => ['role' => 'assistant', 'content' => 'Hello!'],
+                'finish_reason' => 'stop',
+            ]],
+            'usage' => [
+                'prompt_tokens' => 100,
+                'completion_tokens' => 10,
+                'prompt_tokens_details' => ['cached_tokens' => 60],
+            ],
+        ]),
+    ])->preventStrayRequests();
+
+    $response = Prism::text()
+        ->using(Provider::XAI, 'grok-2')
+        ->withPrompt('Hello')
+        ->asText();
+
+    expect($response->usage->promptTokens)->toBe(40)
+        ->and($response->usage->cacheReadInputTokens)->toBe(60);
+});

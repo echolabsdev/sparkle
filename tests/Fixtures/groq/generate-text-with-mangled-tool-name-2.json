@@ -1,0 +1,1 @@
+{"id":"chatcmpl-mangled-2","object":"chat.completion","created":1740311146,"model":"llama-3.3-70b-versatile","choices":[{"index":0,"message":{"role":"assistant","content":"The weather in Detroit is 75 and sunny."},"logprobs":null,"finish_reason":"stop"}],"usage":{"prompt_tokens":350,"completion_tokens":12,"total_tokens":362}}

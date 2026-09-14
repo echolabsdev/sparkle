@@ -14,6 +14,8 @@ class FinishReasonMap
             'end_turn', 'stop_sequence' => FinishReason::Stop,
             'tool_use' => FinishReason::ToolCalls,
             'max_tokens' => FinishReason::Length,
+            'pause_turn' => FinishReason::Pause,
+            'refusal' => FinishReason::Refusal,
             default => FinishReason::Unknown,
         };
     }

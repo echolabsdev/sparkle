@@ -1,0 +1,1 @@
+{"id":"msg_01ApprovalToolTest","type":"message","role":"assistant","model":"claude-3-5-sonnet-20240620","content":[{"type":"text","text":"I'll delete the file for you."},{"type":"tool_use","id":"toolu_delete_file_123","name":"delete_file","input":{"path":"/tmp/test.txt"}}],"stop_reason":"tool_use","stop_sequence":null,"usage":{"input_tokens":100,"output_tokens":50}}

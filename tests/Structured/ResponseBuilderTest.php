@@ -208,6 +208,49 @@ test('StructuredResponseBuilder aggregates tool results from multiple steps as T
         ->and($response->toolResults[2]->result)->toBe('High');
 });
 
+test('StructuredResponseBuilder aggregates cost across steps', function (): void {
+    $builder = new ResponseBuilder;
+
+    $builder->addStep(new Step(
+        text: 'intermediate',
+        finishReason: FinishReason::Length,
+        usage: new Usage(promptTokens: 10, completionTokens: 5, cost: 0.0015),
+        meta: new Meta('step1', 'test-model'),
+        messages: [],
+        systemPrompts: [],
+    ));
+
+    $builder->addStep(new Step(
+        text: '{"value":42}',
+        finishReason: FinishReason::Stop,
+        usage: new Usage(promptTokens: 3, completionTokens: 2, cost: 0.0008),
+        meta: new Meta('step2', 'test-model'),
+        messages: [],
+        systemPrompts: [],
+    ));
+
+    $response = $builder->toResponse();
+
+    expect($response->usage->cost)->toBe(0.0023);
+});
+
+test('StructuredResponseBuilder keeps cost null when no steps have cost', function (): void {
+    $builder = new ResponseBuilder;
+
+    $builder->addStep(new Step(
+        text: '{"value":42}',
+        finishReason: FinishReason::Stop,
+        usage: new Usage(promptTokens: 10, completionTokens: 5),
+        meta: new Meta('step1', 'test-model'),
+        messages: [],
+        systemPrompts: [],
+    ));
+
+    $response = $builder->toResponse();
+
+    expect($response->usage->cost)->toBeNull();
+});
+
 test('StructuredResponseBuilder returns empty arrays when no tool calls or results exist', function (): void {
     $builder = new ResponseBuilder;
 

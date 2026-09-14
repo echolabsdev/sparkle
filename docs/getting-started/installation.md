@@ -12,13 +12,13 @@ Before we dive in, make sure your project meets these requirements:
 ## Step 1: Composer Installation
 
 ::: tip
-Prism is actively evolving. To prevent unexpected issues from breaking changes, we strongly recommend pinning your installation to a specific version. Example: "prism-php/prism": "^0.3.0".
+Prism is actively evolving. To prevent unexpected issues from breaking changes, we strongly recommend pinning your installation to a specific version. Example: "particle-academy/prism": "^0.3.0".
 :::
 
 First, let's add Prism to your project using Composer. Open your terminal, navigate to your project directory, and run:
 
 ```bash
-composer require prism-php/prism
+composer require particle-academy/prism
 ```
 
 This command will download Prism and its dependencies into your project.

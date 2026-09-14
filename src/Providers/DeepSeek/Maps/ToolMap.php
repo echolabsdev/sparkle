@@ -22,7 +22,7 @@ class ToolMap
                 ...$tool->hasParameters() ? [
                     'parameters' => [
                         'type' => 'object',
-                        'properties' => $tool->parametersAsArray(),
+                        'properties' => $tool->parametersAsObject(),
                         'required' => $tool->requiredParameters(),
                     ],
                 ] : [],

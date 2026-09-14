@@ -1,0 +1,10 @@
+{
+    "symbol-whitelist": [
+        "Laravel\\Mcp\\Request",
+        "Laravel\\Mcp\\Response",
+        "Laravel\\Mcp\\ResponseFactory",
+        "Laravel\\Mcp\\Server\\Tool",
+        "Laravel\\Mcp\\Support\\ValidationMessages",
+        "PHPUnit\\Framework\\Assert"
+    ]
+}

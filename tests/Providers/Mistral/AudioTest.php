@@ -139,6 +139,31 @@ describe('Speech-to-Text', function (): void {
         expect($response->additionalContent['segments'])->toHaveCount(2);
     });
 
+    it('can transcribe with diarize parameter', function (): void {
+        FixtureResponse::fakeResponseSequence('audio/transcriptions', 'mistral/speech-to-text-basic');
+
+        $audioFile = Audio::fromBase64(base64_encode('usage-test-audio'), 'audio/flac');
+
+        $response = Prism::audio()
+            ->using('mistral', 'voxtral-mini-latest')
+            ->withInput($audioFile)
+            ->withProviderOptions([
+                'diarize' => true,
+            ])
+            ->asText();
+
+        expect($response->text)->toBe('Hello, this is a test transcription.');
+
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            $diarizeField = collect($data)->firstWhere('name', 'diarize');
+
+            return str_contains($request->url(), 'audio/transcriptions') &&
+                   $diarizeField && $diarizeField['contents'] === true;
+        });
+    });
+
     it('can transcribe with language parameter', function (): void {
         FixtureResponse::fakeResponseSequence('audio/transcriptions', 'mistral/speech-to-text-basic');
 

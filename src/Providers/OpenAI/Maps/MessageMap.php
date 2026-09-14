@@ -117,7 +117,34 @@ class MessageMap
 
     protected function mapAssistantMessage(AssistantMessage $message): void
     {
-        if ($message->content !== '' && $message->content !== '0') {
+        if ($message->toolCalls !== []) {
+            $grouped = collect($message->toolCalls)
+                ->groupBy(fn (ToolCall $toolCall): string => $toolCall->reasoningId ?? '');
+
+            foreach ($grouped as $reasoningId => $toolCalls) {
+                $first = $toolCalls->first();
+
+                if ($reasoningId !== '' && $first instanceof ToolCall) {
+                    $this->mappedMessages[] = [
+                        'type' => 'reasoning',
+                        'id' => $first->reasoningId,
+                        'summary' => $first->reasoningSummary,
+                    ];
+                }
+
+                foreach ($toolCalls as $toolCall) {
+                    $this->mappedMessages[] = [
+                        'id' => $toolCall->id,
+                        'call_id' => $toolCall->resultId,
+                        'type' => 'function_call',
+                        'name' => $toolCall->name,
+                        'arguments' => $toolCall->argumentsAsJson(),
+                    ];
+                }
+            }
+        }
+
+        if ($message->content !== '') {
             $mappedMessage = [
                 'role' => 'assistant',
                 'content' => [
@@ -133,31 +160,6 @@ class MessageMap
             }
 
             $this->mappedMessages[] = $mappedMessage;
-        }
-
-        if ($message->toolCalls !== []) {
-            $reasoningBlocks = collect($message->toolCalls)
-                ->whereNotNull('reasoningId')
-                ->unique('reasoningId')
-                ->map(fn (ToolCall $toolCall): array => [
-                    'type' => 'reasoning',
-                    'id' => $toolCall->reasoningId,
-                    'summary' => $toolCall->reasoningSummary,
-                ])
-                ->values()
-                ->all();
-
-            array_push(
-                $this->mappedMessages,
-                ...$reasoningBlocks,
-                ...array_map(fn (ToolCall $toolCall): array => [
-                    'id' => $toolCall->id,
-                    'call_id' => $toolCall->resultId,
-                    'type' => 'function_call',
-                    'name' => $toolCall->name,
-                    'arguments' => json_encode($toolCall->arguments() ?: (object) []),
-                ], $message->toolCalls)
-            );
         }
     }
 }

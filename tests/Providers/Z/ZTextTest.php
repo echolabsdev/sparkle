@@ -50,7 +50,8 @@ describe('Text generation for Z', function (): void {
             ->asText();
 
         expect($response)->toBeInstanceOf(TextResponse::class)
-            ->and($response->usage->promptTokens)->toBe(190)
+            ->and($response->usage->promptTokens)->toBe(1)
+            ->and($response->usage->cacheReadInputTokens)->toBe(189)
             ->and($response->usage->completionTokens)->toBe(166)
             ->and($response->meta->id)->toBe('202512161952121dd7efde49d14dc9')
             ->and($response->meta->model)->toBe('z-model')
@@ -96,7 +97,8 @@ describe('Text generation for Z', function (): void {
             ->and($firstStep->toolCalls[1]->arguments())->toBe([
                 'city' => 'Detroit',
             ])
-            ->and($response->usage->promptTokens)->toBe(616)
+            ->and($response->usage->promptTokens)->toBe(72)
+            ->and($response->usage->cacheReadInputTokens)->toBe(544)
             ->and($response->usage->completionTokens)->toBe(319)
             ->and($response->meta->id)->toBe('20251216203244b8311d53051b4c17')
             ->and($response->meta->model)->toBe('z-model')
@@ -262,4 +264,31 @@ describe('Image support with Z', function (): void {
             ->asText();
 
     })->throws(PrismRateLimitedException::class);
+});
+
+it('excludes cached tokens from promptTokens', function (): void {
+    Http::fake([
+        '*' => Http::response([
+            'id' => 'cache-test-1',
+            'model' => 'glm-5',
+            'choices' => [[
+                'index' => 0,
+                'message' => ['role' => 'assistant', 'content' => 'Hello!'],
+                'finish_reason' => 'stop',
+            ]],
+            'usage' => [
+                'prompt_tokens' => 100,
+                'completion_tokens' => 10,
+                'prompt_tokens_details' => ['cached_tokens' => 60],
+            ],
+        ]),
+    ])->preventStrayRequests();
+
+    $response = Prism::text()
+        ->using(Provider::Z, 'glm-5')
+        ->withPrompt('Hello')
+        ->asText();
+
+    expect($response->usage->promptTokens)->toBe(40)
+        ->and($response->usage->cacheReadInputTokens)->toBe(60);
 });

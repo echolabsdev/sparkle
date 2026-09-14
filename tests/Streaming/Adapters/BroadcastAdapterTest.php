@@ -421,7 +421,7 @@ it('validates broadcast event structure for multiple event types', function (): 
         $data = $broadcastEvent->broadcastWith();
         expect($data['tool_id'])->toBe('tool-123');
         expect($data['tool_name'])->toBe('search');
-        expect($data['arguments'])->toBe(['q' => 'test']);
+        expect($data['arguments'])->toEqual((object) ['q' => 'test']);
         expect($data['message_id'])->toBe('msg-456');
 
         return true;
@@ -440,6 +440,7 @@ it('validates broadcast event structure for multiple event types', function (): 
             'cache_write_input_tokens' => null,
             'cache_read_input_tokens' => null,
             'thought_tokens' => null,
+            'cost' => null,
         ]);
 
         return true;

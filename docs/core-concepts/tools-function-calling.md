@@ -253,8 +253,7 @@ class SearchTool extends Tool
         $this
             ->as('search')
             ->for('useful when you need to search for current events')
-            ->withStringParameter('query', 'Detailed search query. Best to search one topic at a time.')
-            ->using($this);
+            ->withStringParameter('query', 'Detailed search query. Best to search one topic at a time.');
     }
 
     public function __invoke(string $query): string
@@ -294,6 +293,64 @@ use Prism\Prism\Facades\Tool;
 
 $tool = Tool::make(SearchTool::class);
 ```
+
+### Generating a Tool Class
+
+Rather than writing that boilerplate by hand, let Artisan do it:
+
+```bash
+php artisan make:prism-tool SearchTool
+```
+
+That gives you `app/Tools/SearchTool.php`, wired up and ready for a body. Note
+the tool name the model will see: `SearchTool` becomes `search`, because
+providers expect snake_case identifiers and a trailing "Tool" is a PHP
+convention that means nothing to a model.
+
+You can declare the parameters up front too, and this is where it saves the most
+typing — it writes both the schema and a matching `__invoke()` signature, so the
+two can't drift apart:
+
+```bash
+php artisan make:prism-tool SearchTool     --description="Search the web for current events"     --parameter="query:string:What to search for"     --parameter="scope:enum(web,news,images):Which index to search"     --parameter="limit:integer?:How many results to return"
+```
+
+```php
+$this
+    ->as('search')
+    ->for('Search the web for current events')
+    ->withStringParameter('query', 'What to search for')
+    ->withEnumParameter('scope', 'Which index to search', ['web', 'news', 'images'])
+    ->withNumberParameter('limit', 'How many results to return', required: false);
+```
+
+```php
+public function __invoke(string $query, string $scope, ?int $limit = null): string
+```
+
+Each `--parameter` is `name:type[:description]`. The types are `string`,
+`number`, `integer`, `boolean` and `enum(a,b,c)` — suffix any of them with `?`
+to make the parameter optional. Optional parameters are always emitted last
+regardless of the order you list them in, since PHP won't accept a required
+argument after an optional one.
+
+> [!TIP]
+> Array and object parameters need a `Schema` instance, which doesn't fit in a
+> flag, so the command will tell you so rather than generate something broken.
+> Generate the tool without them and add `->withParameter(new ArraySchema(...))`
+> by hand — see the [schemas guide](/core-concepts/schemas).
+
+Want your own house style? Publish the stub and edit it:
+
+```bash
+php artisan vendor:publish --tag=prism-stubs
+```
+
+> [!NOTE]
+> This is not `make:mcp-tool`, which `laravel/mcp` provides and which generates
+> a different thing: a tool your application **exposes** to other agents over
+> MCP. `make:prism-tool` generates a tool you hand to a model with
+> `withTools()`. Both are useful, and they point in opposite directions.
 
 ## Concurrent Tool Execution
 

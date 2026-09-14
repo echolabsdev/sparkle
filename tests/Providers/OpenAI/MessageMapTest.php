@@ -169,15 +169,6 @@ it('maps assistant message with tool calls', function (): void {
 
     expect($messageMap())->toBe([
         [
-            'role' => 'assistant',
-            'content' => [
-                [
-                    'type' => 'output_text',
-                    'text' => 'I am Nyx',
-                ],
-            ],
-        ],
-        [
             'id' => 'tool_1234',
             'call_id' => 'call_1234',
             'type' => 'function_call',
@@ -185,6 +176,15 @@ it('maps assistant message with tool calls', function (): void {
             'arguments' => json_encode([
                 'query' => 'Laravel collection methods',
             ]),
+        ],
+        [
+            'role' => 'assistant',
+            'content' => [
+                [
+                    'type' => 'output_text',
+                    'text' => 'I am Nyx',
+                ],
+            ],
         ],
     ]);
 });
@@ -211,6 +211,68 @@ it('maps assistant message with tool calls with empty arguments as json object',
             'type' => 'function_call',
             'name' => 'get_schema',
             'arguments' => '{}',
+        ],
+    ]);
+});
+
+it('maps assistant message with multiple tool calls and different reasoning ids', function (): void {
+    $messageMap = new MessageMap(
+        messages: [
+            new AssistantMessage('I am Nyx', [
+                new ToolCall(
+                    'tool_1',
+                    'search',
+                    ['query' => 'Laravel collection methods'],
+                    'call_1',
+                    'rs_1',
+                    [],
+                ),
+                new ToolCall(
+                    'tool_2',
+                    'search',
+                    ['query' => 'Laravel query builder'],
+                    'call_2',
+                    'rs_2',
+                    [],
+                ),
+            ]),
+        ],
+        systemPrompts: []
+    );
+
+    expect($messageMap())->toBe([
+        [
+            'type' => 'reasoning',
+            'id' => 'rs_1',
+            'summary' => [],
+        ],
+        [
+            'id' => 'tool_1',
+            'call_id' => 'call_1',
+            'type' => 'function_call',
+            'name' => 'search',
+            'arguments' => json_encode(['query' => 'Laravel collection methods']),
+        ],
+        [
+            'type' => 'reasoning',
+            'id' => 'rs_2',
+            'summary' => [],
+        ],
+        [
+            'id' => 'tool_2',
+            'call_id' => 'call_2',
+            'type' => 'function_call',
+            'name' => 'search',
+            'arguments' => json_encode(['query' => 'Laravel query builder']),
+        ],
+        [
+            'role' => 'assistant',
+            'content' => [
+                [
+                    'type' => 'output_text',
+                    'text' => 'I am Nyx',
+                ],
+            ],
         ],
     ]);
 });

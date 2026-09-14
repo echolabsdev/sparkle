@@ -169,6 +169,30 @@ it('can generate text using multiple tools and multiple steps', function (): voi
     expect($response->finishReason)->toBe(FinishReason::Stop);
 });
 
+it('extracts reasoning from non-streaming response', function (): void {
+    FixtureResponse::fakeResponseSequence('v1/chat/completions', 'openrouter/generate-text-with-reasoning');
+
+    $response = Prism::text()
+        ->using(Provider::OpenRouter, 'anthropic/claude-3.7-sonnet')
+        ->withPrompt('What is 2 + 2?')
+        ->asText();
+
+    expect($response)->toBeInstanceOf(TextResponse::class);
+    expect($response->text)->toBe('The answer to 2 + 2 is 4.');
+
+    expect($response->additionalContent['reasoning'])
+        ->toBe('Let me think about this simple math problem. 2 + 2 equals 4. This is basic arithmetic.');
+
+    expect($response->additionalContent['reasoning_details'])
+        ->toBeArray()
+        ->toHaveCount(1);
+    expect($response->additionalContent['reasoning_details'][0]['type'])->toBe('reasoning.text');
+    expect($response->additionalContent['reasoning_details'][0]['text'])
+        ->toBe('Let me think about this simple math problem. 2 + 2 equals 4. This is basic arithmetic.');
+
+    expect($response->usage->thoughtTokens)->toBe(18);
+});
+
 it('forwards advanced provider options to openrouter', function (): void {
     FixtureResponse::fakeResponseSequence('v1/chat/completions', 'openrouter/generate-text-with-a-prompt');
 
@@ -229,4 +253,31 @@ it('forwards advanced provider options to openrouter', function (): void {
             && $payload['parallel_tool_calls'] === false
             && $payload['verbosity'] === 'medium';
     });
+});
+
+it('excludes cached tokens from promptTokens', function (): void {
+    Http::fake([
+        '*' => Http::response([
+            'id' => 'gen-cache-1',
+            'model' => 'openai/gpt-4o',
+            'choices' => [[
+                'index' => 0,
+                'message' => ['role' => 'assistant', 'content' => 'Hello!'],
+                'finish_reason' => 'stop',
+            ]],
+            'usage' => [
+                'prompt_tokens' => 100,
+                'completion_tokens' => 10,
+                'prompt_tokens_details' => ['cached_tokens' => 60],
+            ],
+        ]),
+    ])->preventStrayRequests();
+
+    $response = Prism::text()
+        ->using(Provider::OpenRouter, 'openai/gpt-4o')
+        ->withPrompt('Hello')
+        ->asText();
+
+    expect($response->usage->promptTokens)->toBe(40)
+        ->and($response->usage->cacheReadInputTokens)->toBe(60);
 });

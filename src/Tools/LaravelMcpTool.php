@@ -17,8 +17,7 @@ class LaravelMcpTool extends Tool
     public function __construct(private readonly \Laravel\Mcp\Server\Tool $tool)
     {
         $this->as($tool->name())
-            ->for($tool->description())
-            ->using($this);
+            ->for($tool->description());
 
         $data = $tool->toArray();
         $properties = $data['inputSchema']['properties'] ?? [];

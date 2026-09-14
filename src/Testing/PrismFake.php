@@ -336,7 +336,8 @@ class PrismFake extends Provider
 
         yield new StepFinishEvent(
             id: EventID::generate(),
-            timestamp: time()
+            timestamp: time(),
+            usage: $response->usage
         );
 
         yield new StreamEndEvent(

@@ -19,6 +19,15 @@ class Media implements Arrayable
 {
     use HasProviderOptions;
 
+    /**
+     * What this media IS, written into the stored form under `kind`.
+     *
+     * Each concrete type overrides it — `image`, `audio`, `video`, `document` —
+     * with the same key and values both ports store. Null only for a bare
+     * `Media`, which is none of the four.
+     */
+    public const KIND = null;
+
     protected ?string $fileId = null;
 
     protected ?string $localPath = null;
@@ -57,9 +66,10 @@ class Media implements Arrayable
             throw new InvalidArgumentException("$path is not a file");
         }
 
-        $content = file_get_contents($path) ?: '';
+        // Not `?: ''` — a file holding just "0" is falsy but not empty.
+        $content = file_get_contents($path);
 
-        if ($content === '' || $content === '0') {
+        if ($content === false || $content === '') {
             throw new InvalidArgumentException("$path is empty");
         }
 
@@ -170,9 +180,31 @@ class Media implements Arrayable
         return $this->url !== null;
     }
 
+    /**
+     * Are the bytes ALREADY IN HAND?
+     *
+     * This used to delegate to `hasRawContent()`, which answers a different
+     * question — "can bytes be obtained" — and therefore returned true for a
+     * URL that had never been fetched:
+     *
+     *     Audio::fromUrl('http://169.254.169.254/…')->hasBase64();  // was true
+     *
+     * The name states a fact about this object's contents, so it is the natural
+     * predicate for a consumer deciding whether sending this media will cause
+     * an outbound request. Every such consumer got the opposite of what they
+     * asked, silently: the guard passed, the request was built, the fetch
+     * happened. A downstream SSRF guard written this way does nothing at all.
+     *
+     * `fromLocalPath()` and `fromStoragePath()` still answer TRUE, and that is
+     * correct rather than an exception — both read the file at construction, so
+     * by the time anyone asks, the bytes really are held here.
+     *
+     * Ask `hasRawContent()` when you meant "can this be resolved". Both ports
+     * already spell this the strict way; the reference was the odd one out.
+     */
     public function hasBase64(): bool
     {
-        return $this->hasRawContent();
+        return $this->base64 !== null || $this->rawContent !== null;
     }
 
     public function hasMimeType(): bool
@@ -180,6 +212,17 @@ class Media implements Arrayable
         return $this->mimeType !== null;
     }
 
+    /**
+     * Can this payload produce its bytes WITHOUT a network request?
+     *
+     * A URL used to answer true here, because reading its bytes fetched it.
+     * That fetch is gone (see {@see self::rawContent()}), so a URL on its own
+     * no longer has content this object can produce — call
+     * {@see self::fetchUrlContent()} first if you mean to resolve it.
+     *
+     * A local or storage path still answers true: both read the file at
+     * construction, so the bytes are already held.
+     */
     public function hasRawContent(): bool
     {
         if ($this->base64 !== null) {
@@ -188,11 +231,8 @@ class Media implements Arrayable
         if ($this->rawContent !== null) {
             return true;
         }
-        if ($this->isFile()) {
-            return true;
-        }
 
-        return $this->isUrl();
+        return $this->isFile();
     }
 
     public function hasUrl(): bool
@@ -220,42 +260,82 @@ class Media implements Arrayable
         return $this->url;
     }
 
+    /**
+     * The payload's bytes, or null when they are not already obtainable.
+     *
+     * READING THIS NEVER MAKES A NETWORK REQUEST. It used to: a URL payload
+     * fetched itself here, through a bare `Http::get()` with no host allow-list,
+     * no private-address check and redirects followed. And Prism reads media
+     * bytes on ordinary provider calls, so an application that built
+     * `fromUrl()` from request input and sent it to a provider that inlines
+     * media had this process fetch whatever URL it named — a cloud metadata
+     * endpoint included. Verified, not supposed.
+     *
+     * Both ports already refused to do this, and said why in their own words:
+     * reading a property must never perform an outbound request. The reference
+     * was the outlier and now agrees with them.
+     *
+     * To resolve a URL, call {@see self::fetchUrlContent()} — explicitly, with a
+     * URL you have decided to trust. That call is unguarded in all three
+     * languages, deliberately visible rather than implicit.
+     *
+     * Removing the URL branch also fixed an ordering defect: a payload carrying
+     * BOTH a url and base64 used to fetch the url and ignore the bytes it
+     * already held.
+     */
     public function rawContent(): ?string
     {
-        if ($this->rawContent) {
+        if ($this->rawContent !== null && $this->rawContent !== '') {
             return $this->rawContent;
         }
         if ($this->localPath) {
-            $this->rawContent = file_get_contents($this->localPath) ?: null;
+            // Not `?: null` — "0" is falsy but is real file content.
+            $content = file_get_contents($this->localPath);
+
+            $this->rawContent = $content === false ? null : $content;
         } elseif ($this->storagePath) {
             $this->rawContent = Storage::get($this->storagePath);
-        } elseif ($this->isUrl()) {
-            $this->fetchUrlContent();
-        } elseif ($this->hasBase64()) {
-            $this->rawContent = base64_decode((string) $this->base64);
+        } elseif ($this->base64 !== null) {
+            $this->rawContent = base64_decode($this->base64);
         }
 
         return $this->rawContent;
     }
 
+    /**
+     * The payload as base64, or null when there are no bytes to encode.
+     *
+     * Null for a URL-only payload rather than `''`. It used to fetch the URL and
+     * encode the result; with no fetch, encoding `(string) null` would cache and
+     * return an empty string, which a provider mapper sends as an empty image
+     * rather than failing. Null is what both ports return, and it is the value a
+     * caller can actually branch on.
+     */
     public function base64(): ?string
     {
-        if ($this->base64) {
+        if ($this->base64 !== null && $this->base64 !== '') {
             return $this->base64;
         }
 
-        return $this->base64 = base64_encode((string) $this->rawContent());
+        $content = $this->rawContent();
+
+        if ($content === null) {
+            return null;
+        }
+
+        return $this->base64 = base64_encode($content);
     }
 
     public function mimeType(): ?string
     {
-        if ($this->mimeType) {
-            return $this->mimeType;
-        }
-
-        if ($content = $this->rawContent()) {
+        if ($this->mimeType === null && $content = $this->rawContent()) {
             $this->mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($content) ?: null;
         }
+
+        $this->mimeType = match ($this->mimeType) {
+            'audio/x-wav', 'audio/wave', 'audio/x-pn-wav', 'audio/vnd.wave' => 'audio/wav',
+            default => $this->mimeType,
+        };
 
         return $this->mimeType;
     }
@@ -274,23 +354,45 @@ class Media implements Arrayable
             return $resource;
         }
 
-        if ($this->url) {
-            $this->fetchUrlContent();
-
+        if ($this->rawContent || $this->base64) {
             return $this->createStreamFromContent($this->rawContent());
         }
 
-        if ($this->rawContent || $this->base64) {
-            return $this->createStreamFromContent($this->rawContent());
+        // A URL is NOT fetched to make a stream. This path used to, and every
+        // audio handler and OpenAI image edits reach it on an ordinary call —
+        // so a request-derived `Audio::fromUrl()` had this process fetch the
+        // URL. Refused with the explicit alternative named, because a caller
+        // who meant to resolve a trusted URL needs to know how.
+        if ($this->url !== null) {
+            throw new InvalidArgumentException(
+                'Media built from a URL has no bytes to stream, and Prism no longer fetches a URL implicitly. '
+                .'Call fetchUrlContent() first, with a URL you have decided to trust — reading media bytes used '
+                .'to fetch them automatically, which made any request-derived URL a server-side fetch.'
+            );
         }
 
         throw new InvalidArgumentException('Cannot create resource from media');
     }
 
-    public function fetchUrlContent(): void
+    /**
+     * Resolve a URL payload's bytes. EXPLICIT, and the only thing that does.
+     *
+     * Nothing in Prism calls this for you any more. That is the point: reading
+     * media bytes used to call it implicitly, which turned a request-derived URL
+     * into a server-side fetch on ordinary provider calls.
+     *
+     * **This method is unguarded** — no host allow-list, no private-address
+     * check — exactly as the TypeScript and Python ports' explicit fetch is.
+     * Calling it with a URL taken from user input is still a server-side
+     * request forgery; the difference is that it is now a line you wrote rather
+     * than a side effect of reading a property. Validate the URL first.
+     *
+     * Returns the payload so the call reads as a step: `$image->fetchUrlContent()`.
+     */
+    public function fetchUrlContent(): static
     {
         if (! $this->url) {
-            return;
+            return $this;
         }
 
         /** @var Response */
@@ -308,21 +410,44 @@ class Media implements Arrayable
         }
 
         $this->rawContent = $content;
+
+        return $this;
     }
 
     /**
+     * The stored form: what a conversation is persisted as, and rebuilt from.
+     *
+     * The same keys and values as both ports' serialisation, pinned by the
+     * `media-roundtrip` suite in prism-parity. Three things changed to get
+     * there, and each was a defect rather than a style:
+     *
+     * - **The bytes are always here.** This used to write the `base64` FIELD,
+     *   which is filled only when the media was built from base64 or something
+     *   had since called `base64()`. So one object had two stored forms
+     *   depending on what read it earlier, and a message saved before it was
+     *   sent — a `fromRawContent()` image, a `Document::fromText()` — stored no
+     *   content at all and could not be replayed. `base64()` is computed from
+     *   bytes already held; it never makes a network request, so a URL-only
+     *   payload still stores `null`.
+     * - **No file paths.** `local_path` and `storage_path` recorded where the
+     *   file lived on the machine that serialised it. Read back, that names a
+     *   different file, or none, on any other host — and a temp upload path is
+     *   reused. The bytes travel instead.
+     * - **A `kind`.** An Image, an Audio and an untitled Document used to
+     *   serialise identically, so anything rebuilding a message had to record
+     *   the class separately or guess.
+     *
      * @return array<string, mixed>
      */
     #[\Override]
     public function toArray(): array
     {
         return [
+            'kind' => static::KIND,
             'url' => $this->url,
-            'base64' => $this->base64,
+            'base64' => $this->base64(),
             'mime_type' => $this->mimeType,
             'file_id' => $this->fileId,
-            'local_path' => $this->localPath,
-            'storage_path' => $this->storagePath,
             'filename' => $this->filename,
         ];
     }

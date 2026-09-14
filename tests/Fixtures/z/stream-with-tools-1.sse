@@ -1,0 +1,5 @@
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"z-model","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"z-model","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_-8062812703858712887","type":"function","function":{"name":"search_games","arguments":"{\"city\":\"Detroit\"}"}}]},"finish_reason":null}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"z-model","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_-8062812703858712886","type":"function","function":{"name":"get_weather","arguments":"{\"city\":\"Detroit\"}"}}]},"finish_reason":null}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"z-model","choices":[{"index":0,"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":272,"completion_tokens":210,"total_tokens":482,"prompt_tokens_details":{"cached_tokens":271}}}
+data: [DONE]

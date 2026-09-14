@@ -1,0 +1,51 @@
+{
+  "id": "resp_5f9c1a2b3d4e5f60",
+  "object": "response",
+  "status": "completed",
+  "model": "openai/gpt-5.1",
+  "created_at": 1763328436,
+  "completed_at": 1763328449,
+  "tools": [
+    { "type": "web_search" }
+  ],
+  "output": [
+    {
+      "type": "search_results",
+      "results": [
+        {
+          "title": "South Brazil weather in November",
+          "url": "https://www.sunheron.com/south-america/brazil/south-brazil-weather-november/",
+          "snippet": "Average daytime temperatures around 24C with roughly 15 rainy days."
+        },
+        {
+          "title": "Climate of South Brazil",
+          "url": "https://en.wikipedia.org/wiki/Climate_of_South_Brazil",
+          "snippet": "Subtropical highland and humid subtropical climates dominate the region."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_9a8b7c6d",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Southern Brazil in mid-November is warm and comfortable, averaging about 24C by day and 18C at night, with roughly 15 rainy days across the month."
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 8,
+    "output_tokens": 346,
+    "total_tokens": 354,
+    "cost": {
+      "input_tokens_cost": 0.0,
+      "output_tokens_cost": 0.0,
+      "request_cost": 0.005,
+      "total_cost": 0.005
+    }
+  },
+  "error": null
+}

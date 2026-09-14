@@ -14,15 +14,15 @@ it('maps tools', function (): void {
         ->withStringParameter('query', 'the detailed search query')
         ->using(fn (): string => '[Search results]');
 
-    expect(ToolMap::map([$tool]))->toBe([[
+    expect(ToolMap::map([$tool]))->toEqual([[
         'type' => 'function',
         'function' => [
             'name' => $tool->name(),
             'description' => $tool->description(),
             'parameters' => [
                 'type' => 'object',
-                'properties' => [
-                    'query' => [
+                'properties' => (object) [
+                    'query' => (object) [
                         'description' => 'the detailed search query',
                         'type' => 'string',
                     ],

@@ -84,6 +84,9 @@ class Structured
             'format' => $request->schema()->toArray(),
             'stream' => false,
             ...Arr::whereNotNull([
+                'think' => $request->providerOptions('thinking') ?? (
+                    $request->reasoningEnabled() === false ? false : null
+                ),
                 'keep_alive' => $request->providerOptions('keep_alive'),
             ]),
             'options' => Arr::whereNotNull(array_merge([

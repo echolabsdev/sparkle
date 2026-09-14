@@ -6,6 +6,7 @@ namespace Prism\Prism\Providers\XAI\Maps;
 
 use Exception;
 use Prism\Prism\Contracts\Message;
+use Prism\Prism\Providers\Support\Payload;
 use Prism\Prism\ValueObjects\Media\Image;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
 use Prism\Prism\ValueObjects\Messages\SystemMessage;
@@ -81,10 +82,12 @@ class MessageMap
 
         $this->mappedMessages[] = [
             'role' => 'user',
-            'content' => [
-                ['type' => 'text', 'text' => $message->text()],
-                ...$imageParts,
-            ],
+            'content' => $imageParts === []
+                ? $message->text()
+                : [
+                    ['type' => 'text', 'text' => $message->text()],
+                    ...$imageParts,
+                ],
         ];
     }
 
@@ -95,11 +98,11 @@ class MessageMap
             'type' => 'function',
             'function' => [
                 'name' => $toolCall->name,
-                'arguments' => json_encode($toolCall->arguments() ?: (object) []),
+                'arguments' => $toolCall->argumentsAsJson(),
             ],
         ], $message->toolCalls);
 
-        $this->mappedMessages[] = array_filter([
+        $this->mappedMessages[] = Payload::compact([
             'role' => 'assistant',
             'content' => $message->content,
             'tool_calls' => $toolCalls,

@@ -42,13 +42,7 @@ readonly class StreamEndEvent extends StreamEvent
             'id' => $this->id,
             'timestamp' => $this->timestamp,
             'finish_reason' => $this->finishReason->name,
-            'usage' => $this->usage instanceof Usage ? [
-                'prompt_tokens' => $this->usage->promptTokens,
-                'completion_tokens' => $this->usage->completionTokens,
-                'cache_write_input_tokens' => $this->usage->cacheWriteInputTokens,
-                'cache_read_input_tokens' => $this->usage->cacheReadInputTokens,
-                'thought_tokens' => $this->usage->thoughtTokens,
-            ] : null,
+            'usage' => $this->usage?->toArray(),
             'citations' => $this->citations !== null ? array_map(
                 fn (MessagePartWithCitations $citationPart): array => [
                     'output_text' => $citationPart->outputText,

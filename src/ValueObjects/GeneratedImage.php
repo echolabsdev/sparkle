@@ -6,6 +6,8 @@ namespace Prism\Prism\ValueObjects;
 
 class GeneratedImage extends Media\Media
 {
+    public const KIND = 'image';
+
     public function __construct(
         ?string $url = null,
         ?string $base64 = null,

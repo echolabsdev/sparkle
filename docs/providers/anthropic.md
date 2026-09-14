@@ -117,63 +117,102 @@ When multiple tool results are returned, Prism automatically applies caching to 
 
 Please ensure you read Anthropic's [prompt caching documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching), which covers some important information on e.g. minimum cacheable tokens and message order consistency.
 
-## Extended thinking
+## Thinking
 
-Claude Sonnet 3.7 supports an optional extended thinking mode, where it will reason before returning its answer. Please ensure your consider [Anthropic's own extended thinking documentation](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking) before using extended thinking with caching and/or tools, as there are some important limitations and behaviours to be aware of.
+Anthropic models support extended thinking, where the model reasons before returning its answer. Claude 4.6+ models (Opus 4.6, Sonnet 4.6) use **adaptive thinking** (recommended), where Claude dynamically determines when and how much to think. Older models use manual thinking with a fixed token budget.
 
-### Enabling extended thinking and setting budget
-Prism supports thinking mode for text and structured with the same API:
+Please refer to Anthropic's [adaptive thinking](https://docs.anthropic.com/en/docs/build-with-claude/adaptive-thinking) and [extended thinking](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking) documentation for important limitations and behaviours when using thinking with caching and/or tools.
+
+### Adaptive thinking (recommended for Claude 4.6+)
+
+Adaptive thinking lets Claude decide when and how much to think based on the complexity of each request:
 
 ```php
-use Prism\Prism\Enums\Provider;
 use Prism\Prism\Facades\Prism;
 
 Prism::text()
-    ->using('anthropic', 'claude-3-7-sonnet-latest')
+    ->using('anthropic', 'claude-sonnet-4-6')
     ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
-    // enable thinking
-    ->withProviderOptions(['thinking' => ['enabled' => true]]) 
+    ->withProviderOptions(['thinking' => ['type' => 'adaptive']])
     ->asText();
 ```
-By default Prism will set the thinking budget to the value set in config, or where that isn't set, the minimum allowed (1024).
 
-You can overide the config (or its default) using `withProviderOptions`:
+Use the `effort` parameter to guide how much thinking Claude does:
 
 ```php
-use Prism\Prism\Enums\Provider;
-use Prism\Prism\Facades\Prism;
+Prism::text()
+    ->using('anthropic', 'claude-sonnet-4-6')
+    ->withPrompt('Analyze the trade-offs between microservices and monolithic architectures')
+    ->withProviderOptions([
+        'thinking' => ['type' => 'adaptive'],
+        'effort' => 'high',
+    ])
+    ->asText();
+```
 
+Available effort levels:
+
+| Level    | Description                                                              |
+|----------|--------------------------------------------------------------------------|
+| `max`    | Maximum capability with no constraints on thinking depth. Opus 4.6 only. |
+| `high`   | Deep reasoning on complex tasks. This is the default.                    |
+| `medium` | Balanced approach with moderate token savings.                           |
+| `low`    | Most efficient. Significant token savings with some capability reduction.|
+
+> [!NOTE]
+> Setting `effort` to `"high"` produces the same behavior as omitting the parameter entirely.
+
+> [!TIP]
+> The `effort` parameter can also be used without thinking enabled, in which case it controls overall token spend for text responses and tool calls.
+
+Works identically with `Prism::structured()`.
+
+### Manual thinking (legacy)
+
+> [!WARNING]
+> Manual thinking with `enabled` and `budgetTokens` is deprecated on Opus 4.6 and Sonnet 4.6, and newer models (Opus 4.7 and later, Sonnet 5) refuse it with a 400. Use adaptive thinking on those. Manual thinking is still required for older models (Sonnet 4.5, Opus 4.5, Sonnet 3.7, etc.).
+
+```php
 Prism::text()
     ->using('anthropic', 'claude-3-7-sonnet-latest')
     ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
-    // Enable thinking and set a budget
+    ->withProviderOptions(['thinking' => ['enabled' => true]])
+    ->asText();
+```
+
+By default Prism sets the thinking budget to `default_thinking_budget` from the Anthropic provider config (`ANTHROPIC_DEFAULT_THINKING_BUDGET`), or, where that isn't set, to the minimum allowed (1024).
+
+You can override the config (or its default) using `withProviderOptions`:
+
+```php
+Prism::text()
+    ->using('anthropic', 'claude-3-7-sonnet-latest')
+    ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
     ->withProviderOptions([
         'thinking' => [
-            'enabled' => true, 
-            'budgetTokens' => 2048
-        ]
+            'enabled' => true,
+            'budgetTokens' => 2048,
+        ],
     ]);
 ```
-Note that thinking tokens count towards output tokens, so you will be billed for them and your token budget must be less than the max tokens you have set for the request. 
 
-If you expect a long response, you should ensure there's enough tokens left for the response - i.e. does (maxTokens - thinkingBudget) leave a sufficient remainder.
+Any other `thinking` value is sent to Anthropic as given: for example its own `['type' => 'enabled', 'budget_tokens' => 2048]`, or `['type' => 'adaptive', 'display' => 'summarized']`. `withReasoning(false)` still removes it.
+
+Note that thinking tokens count towards output tokens, so you will be billed for them and your token budget must be less than the max tokens you have set for the request. If you expect a long response, ensure there's enough tokens left for the response — i.e. does (maxTokens - thinkingBudget) leave a sufficient remainder.
 
 ### Inspecting the thinking block
 
-Anthropic returns the thinking block with its response. 
+Anthropic returns the thinking block with its response. This works identically for both adaptive and manual thinking modes.
 
 You can access it via the additionalContent property on either the Response or the relevant step.
 
 On the Response (easiest if not using tools):
 
 ```php
-use Prism\Prism\Enums\Provider;
-use Prism\Prism\Facades\Prism;
-
-Prism::text()
-    ->using('anthropic', 'claude-3-7-sonnet-latest')
+$response = Prism::text()
+    ->using('anthropic', 'claude-sonnet-4-6')
     ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
-    ->withProviderOptions(['thinking' => ['enabled' => true']]) 
+    ->withProviderOptions(['thinking' => ['type' => 'adaptive']])
     ->asText();
 
 $response->additionalContent['thinking'];
@@ -185,19 +224,22 @@ On the Step (necessary if using tools, as Anthropic returns the thinking block o
 $tools = [...];
 
 $response = Prism::text()
-    ->using('anthropic', 'claude-3-7-sonnet-latest')
+    ->using('anthropic', 'claude-sonnet-4-6')
     ->withTools($tools)
     ->withMaxSteps(3)
     ->withPrompt('What time is the tigers game today and should I wear a coat?')
-    ->withProviderOptions(['thinking' => ['enabled' => true]])
+    ->withProviderOptions(['thinking' => ['type' => 'adaptive']])
     ->asText();
 
 $response->steps->first()->additionalContent->thinking;
 ```
 
+> [!NOTE]
+> With adaptive thinking, Claude may skip thinking for simple queries, in which case no thinking block is returned.
+
 ### Extended output mode
 
-Claude Sonnet 3.7 also brings extended output mode which increase the output limit to 128k tokens. 
+Claude Sonnet 3.7 also brings extended output mode which increase the output limit to 128k tokens.
 
 This feature is currently in beta, so you will need to enable to by adding `output-128k-2025-02-19` to your Anthropic anthropic_beta config (see [Configuration](#configuration) above).
 
@@ -219,9 +261,9 @@ return Prism::text()
     ->asEventStreamResponse();
 ```
 
-### Streaming with Extended Thinking
+### Streaming with Thinking
 
-When using extended thinking, the reasoning process streams separately from the final answer:
+When using thinking (adaptive or manual), the reasoning process streams separately from the final answer:
 
 ```php
 use Prism\Prism\Enums\StreamEventType;
@@ -234,6 +276,29 @@ foreach ($stream as $event) {
     };
 }
 ```
+
+### Fine-grained tool streaming
+
+Anthropic’s [fine-grained tool streaming](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/fine-grained-tool-streaming) lets tool-use input arrive incrementally (with lower latency for large arguments) instead of waiting for a complete JSON payload. Enable it on each tool that should use this behavior with the `eager_input_streaming` provider option:
+
+```php
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Tool;
+
+$weatherTool = Tool::as('get_weather')
+    ->for('Get current weather for a location')
+    ->withStringParameter('location', 'The city and state')
+    ->withProviderOptions(['eager_input_streaming' => true])
+    ->using(fn (string $location): string => "Weather in {$location}: 72°F, sunny");
+
+$stream = Prism::text()
+    ->using('anthropic', 'claude-sonnet-4-5-20250929')
+    ->withTools([$weatherTool])
+    ->withPrompt('What is the weather in San Francisco?')
+    ->asStream();
+```
+
+Use this together with a streaming entrypoint (`asStream()`, `asEventStreamResponse()`, etc.). While the model is still emitting a tool call, streamed input may be partial JSON; only treat tool arguments as final once the stream indicates the tool input is complete.
 
 For complete streaming documentation including Vercel Data Protocol and WebSocket broadcasting, see [Streaming Output](/core-concepts/streaming-output).
 
@@ -376,6 +441,81 @@ foreach ($messageChunks as $messageChunk) {
 ```
 
 Note that when using streaming, Anthropic does not stream citations in the same way. Instead, of building the context as above, yield text to the browser in the usual way and pair text up with the relevant footnote using the `citationIndex` on the text chunk's additionalContent parameter.
+
+## Context management
+
+Anthropic can edit the transcript server-side as a conversation grows — clearing
+older tool results, clearing thinking blocks, or compacting. Pass the edits
+through `context_management`, along with the beta header:
+
+```php
+use Prism\Prism\Enums\Provider;
+use Prism\Prism\Facades\Prism;
+
+$response = Prism::text()
+    ->using(Provider::Anthropic, 'claude-sonnet-5')
+    ->withMaxSteps(24)
+    ->withTools($tools)
+    ->withPrompt('Audit every page of the ledger.')
+    ->withProviderOptions([
+        'anthropic_beta' => 'context-management-2025-06-27',
+        'context_management' => [
+            'edits' => [[
+                'type' => 'clear_tool_uses_20250919',
+                'trigger' => ['type' => 'input_tokens', 'value' => 30000],
+                'keep' => ['type' => 'tool_uses', 'value' => 3],
+            ]],
+        ],
+    ])
+    ->asText();
+```
+
+`anthropic_beta` **merges** with any beta features set in your config, rather
+than replacing them, and accepts either a comma-separated string or an array. So
+adding context management will not switch off another beta you already rely on.
+
+### Reading what was actually cleared
+
+What Anthropic did comes back on `additionalContent`:
+
+```php
+$applied = $response->additionalContent['context_management'] ?? null;
+
+foreach ($applied['applied_edits'] ?? [] as $edit) {
+    $edit['type'];                  // clear_tool_uses_20250919
+    $edit['cleared_tool_uses'];     // 6
+    $edit['cleared_input_tokens'];  // 12678
+}
+```
+
+**The counts live inside each `applied_edits` entry, not on the block above
+them.** Reading them one level too high returns nothing and raises nothing — you
+get `applied_edits: 1, cleared_input_tokens: 0`, which reads as "the edit ran and
+cleared nothing" rather than as a mistake in your own code.
+
+Three states are worth distinguishing, and only two of them are visible if you
+check for truthiness alone:
+
+| `additionalContent['context_management']` | meaning |
+|---|---|
+| absent | the field never reached the API — usually a missing beta header |
+| present, `applied_edits` empty | the edit ran and had nothing to clear yet |
+| present, `applied_edits` populated | the transcript was edited |
+
+The first is a configuration failure that otherwise looks exactly like a quiet
+success: the request succeeds, the bill is unchanged, and nothing reports a
+problem.
+
+`cleared_input_tokens` accumulates over a conversation rather than reporting a
+per-turn delta.
+
+::: warning Verifying the figure yourself
+A before/after comparison of per-step input tokens will **under-report** what was
+cleared, because the turn that triggered the edit also grew the transcript by its
+own assistant message and a fresh tool result. Subtracting two consecutive step
+totals measures the clearing minus that growth. Add the growth back before
+concluding the reported number is wrong.
+:::
 
 ## Considerations
 ### Message Order

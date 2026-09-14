@@ -11,14 +11,18 @@ trait HandlesStructuredJson
      */
     protected function extractStructuredData(string $text): array
     {
-        if ($text === '' || $text === '0') {
+        if ($text === '') {
             return [];
         }
 
         try {
-            return json_decode($text, true, flags: JSON_THROW_ON_ERROR);
+            $decoded = json_decode($text, true, flags: JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
             return [];
         }
+
+        // Valid JSON that is not an object/array — "0", "12", "\"text\"", "true" —
+        // decodes to a scalar, which this method is declared to never return.
+        return is_array($decoded) ? $decoded : [];
     }
 }

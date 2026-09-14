@@ -1,0 +1,55 @@
+name: Factcheck
+
+# Verifies that this repository's PROSE agrees with its CODE — that a class an
+# example imports exists, an artisan command it names is declared, an install
+# line resolves, a cited decision is real, a link points at something.
+#
+# The checker lives in prism-parity and is checked out here as `.parity`, the
+# same way the conformance loaders already arrive. It is maintained in ONE
+# place: see prism-parity/docs/decisions/0019-checking-the-prose.md.
+
+on:
+  push:
+    branches: [main, "*.x"]
+  pull_request:
+  # Claims rot without anything here changing — a sibling renames a class, a
+  # package gets published. The nightly notices.
+  schedule:
+    - cron: "40 7 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  factcheck:
+    name: Claims
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Tags, not a shallow clone: the staleness lockfile records versions as
+      # git tags, and without them every repo reads as "unknown" and the
+      # currency check compares nothing to nothing and passes.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout prism-parity
+        uses: actions/checkout@v4
+        with:
+          repository: Particle-Academy/prism-parity
+          path: .parity
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check claims
+        run: node .parity/tools/factcheck.mjs
+
+      # --strict promotes version drift from a warning to a failure. Nightly
+      # only, so a release elsewhere cannot redden an unrelated pull request
+      # here while currency is still enforced every day.
+      - name: Check currency
+        if: github.event_name == 'schedule'
+        run: node .parity/tools/factcheck.mjs --strict

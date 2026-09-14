@@ -9,7 +9,6 @@ use Illuminate\Http\Client\Response as ClientResponse;
 use Illuminate\Support\Arr;
 use Prism\Prism\Concerns\CallsTools;
 use Prism\Prism\Enums\FinishReason;
-use Prism\Prism\Exceptions\PrismException;
 use Prism\Prism\Providers\Mistral\Concerns\ExtractsText;
 use Prism\Prism\Providers\Mistral\Concerns\ExtractsThinking;
 use Prism\Prism\Providers\Mistral\Concerns\MapsFinishReason;
@@ -47,6 +46,8 @@ class Text
 
     public function handle(Request $request): Response
     {
+        $this->resolveToolApprovals($request);
+
         $response = $this->sendRequest($request);
 
         $this->validateResponse($response);
@@ -55,8 +56,7 @@ class Text
 
         return match ($this->mapFinishReason($data)) {
             FinishReason::ToolCalls => $this->handleToolCalls($data, $request, $response),
-            FinishReason::Stop => $this->handleStop($data, $request, $response),
-            default => throw PrismException::providerResponseError('Invalid tool choice'),
+            default => $this->handleStop($data, $request, $response),
         };
     }
 
@@ -67,18 +67,21 @@ class Text
     {
         $toolCalls = $this->mapToolCalls(data_get($data, 'choices.0.message.tool_calls', []));
 
-        $toolResults = $this->callTools($request->tools(), $toolCalls);
+        $hasPendingToolCalls = false;
+        $approvalRequests = [];
+        $toolResults = $this->callToolsWithPending($request->tools(), $toolCalls, $hasPendingToolCalls, $approvalRequests);
 
         $this->addStep($data, $request, $clientResponse, $toolResults);
 
         $request->addMessage(new AssistantMessage(
             $this->extractText(data_get($data, 'choices.0.message', [])),
             $toolCalls,
+            toolApprovalRequests: $approvalRequests,
         ));
         $request->addMessage(new ToolResultMessage($toolResults));
         $request->resetToolChoice();
 
-        if ($this->shouldContinue($request)) {
+        if (! $hasPendingToolCalls && $this->shouldContinue($request)) {
             return $this->handle($request);
         }
 
@@ -144,6 +147,7 @@ class Text
             ], Arr::whereNotNull([
                 'temperature' => $request->temperature(),
                 'top_p' => $request->topP(),
+                'reasoning_effort' => $request->providerOptions('reasoning_effort'),
                 'tools' => ToolMap::map($request->tools()),
                 'tool_choice' => ToolChoiceMap::map($request->toolChoice()),
             ]))

@@ -22,17 +22,21 @@ it('maps tools to gemini format', function (): void {
         )
         ->using(fn (): string => '[Search results]');
 
-    expect(ToolMap::map([$tool]))->toBe([[
+    expect(ToolMap::map([$tool]))->toEqual([[
         'name' => $tool->name(),
         'description' => $tool->description(),
         'parameters' => [
             'type' => 'object',
-            'properties' => [
-                'query' => [
+            // The `properties` map and each schema in it are JSON OBJECTS.
+            // One level: a nested schema's own `properties` stays an array,
+            // which is right — ObjectSchema drops the key when it is empty, so
+            // there is no empty container to get wrong down there.
+            'properties' => (object) [
+                'query' => (object) [
                     'description' => 'the detailed search query',
                     'type' => 'string',
                 ],
-                'options' => [
+                'options' => (object) [
                     'description' => 'additional options',
                     'type' => 'object',
                     'properties' => [

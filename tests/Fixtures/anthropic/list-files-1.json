@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "type": "file",
+      "id": "file_011CZ3cYKGMZVroCGkmxwWkz",
+      "size_bytes": 17,
+      "created_at": "2026-03-14T20:35:54.416000Z",
+      "filename": "test1.txt",
+      "mime_type": "text/plain",
+      "downloadable": false
+    },
+    {
+      "type": "file",
+      "id": "file_011CZ3bbhcz6rgAXqe8pCLcX",
+      "size_bytes": 17,
+      "created_at": "2026-03-14T20:23:33.521000Z",
+      "filename": "data.jsonl",
+      "mime_type": "application/octet-stream",
+      "downloadable": false
+    }
+  ],
+  "has_more": false,
+  "first_id": "file_011CZ3cYKGMZVroCGkmxwWkz",
+  "last_id": "file_011CZ3bbhcz6rgAXqe8pCLcX"
+}

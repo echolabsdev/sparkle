@@ -30,6 +30,8 @@ use Prism\Prism\Text\Response as TextResponse;
  * @method static PendingImageRequest image()
  * @method static PendingAudioRequest audio()
  * @method static PendingModerationRequest moderation()
+ * @method static \Prism\Prism\Files\PendingRequest files()
+ * @method static \Prism\Prism\Batch\PendingRequest batch()
  *
  * @see \Prism\Prism\Prism
  */

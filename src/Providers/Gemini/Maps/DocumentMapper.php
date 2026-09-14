@@ -48,9 +48,19 @@ class DocumentMapper extends ProviderMediaMapper
         return Provider::Gemini;
     }
 
+    /**
+     * A URL is accepted only when Gemini can take it as a file URI.
+     *
+     * YouTube links and Gemini File API URIs go to the provider as a reference.
+     * Any other URL used to be accepted too, because it was fetched and inlined
+     * — through an unguarded request, which is why that fetch is gone. Accepting
+     * such a URL now would pass validation and inline `null`.
+     */
     protected function validateMedia(): bool
     {
-        if ($this->media->isUrl()) {
+        $url = $this->media->url();
+
+        if ($this->media->isUrl() && $url !== null && MediaUrlDetector::shouldPassAsFileUri($url)) {
             return true;
         }
 

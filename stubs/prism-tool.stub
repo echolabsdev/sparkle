@@ -1,0 +1,34 @@
+<?php
+
+namespace {{ namespace }};
+
+use Prism\Prism\Tool;
+
+class {{ class }} extends Tool
+{
+    public function __construct()
+    {
+        $this
+            ->as('{{ toolName }}')
+            // The model reads this to decide WHETHER to call the tool, so say
+            // what it is for and when to reach for it — not how it works.
+            ->for({{ description }}){{ parameters }};
+    }
+
+    /**
+     * Handle the call.
+     *
+     * Must return a string or a ToolOutput; anything else and Prism raises.
+     *
+     * A thrown exception is CAUGHT and handed back to the model as a ToolError
+     * rather than propagating, so a failure here becomes something the model
+     * reads and reacts to. Call ->withoutErrorHandling() in the constructor if
+     * you would rather it reach your application.
+     */
+    public function __invoke({{ signature }}): string
+    {
+        //
+
+        return 'The result the model will read.';
+    }
+}

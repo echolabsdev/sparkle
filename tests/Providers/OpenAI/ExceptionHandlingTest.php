@@ -43,6 +43,19 @@ it('handles rate limit errors (429)', function (): void {
         ->toThrow(PrismRateLimitedException::class);
 });
 
+it('handles provider overloaded errors (503)', function (): void {
+    // OpenAI added "503 Service Unavailable" to its inference endpoints on
+    // 2026-09-08. This arm listed only 529, so a 503 fell through to the
+    // generic handler and surfaced as a PrismException — not the exception a
+    // caller's retry logic keys on. Every other provider that can return 503
+    // already mapped it; OpenAI was the only one that did not.
+    $mockResponse = createOpenAIMockResponse(503, []);
+    $exception = new RequestException($mockResponse);
+
+    expect(fn () => $this->provider->handleRequestException('gpt-4o', $exception))
+        ->toThrow(PrismProviderOverloadedException::class);
+});
+
 it('handles provider overloaded errors (529)', function (): void {
     $mockResponse = createOpenAIMockResponse(529, []);
     $exception = new RequestException($mockResponse);

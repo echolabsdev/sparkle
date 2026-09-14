@@ -19,6 +19,7 @@ use Prism\Prism\Streaming\Events\TextDeltaEvent;
 use Prism\Prism\Streaming\Events\ToolCallEvent;
 use Prism\Prism\Streaming\Events\ToolResultEvent;
 use Prism\Prism\ValueObjects\ProviderTool;
+use stdClass;
 use Tests\Fixtures\FixtureResponse;
 
 beforeEach(function (): void {
@@ -116,7 +117,7 @@ it('can generate text stream using searchGrounding', function (): void {
         // Verify tools configuration has google_search when searchGrounding is true
         $hasGoogleSearch = isset($data['tools']) &&
             isset($data['tools'][0]['google_search']) &&
-            $data['tools'][0]['google_search'] instanceof \stdClass;
+            $data['tools'][0]['google_search'] instanceof stdClass;
 
         // Verify tools are configured as expected (google_search, not function_declarations)
         $toolsConfigCorrect = ! isset($data['tools'][0]['function_declarations']);
@@ -224,9 +225,11 @@ it('can generate text stream using file_search provider tool with options', func
         $data = $request->data();
 
         expect($data['tools'][0])->toHaveKey('file_search');
-        expect($data['tools'][0]['file_search'])->toBeArray();
-        expect($data['tools'][0]['file_search'])->toHaveKey('file_search_store_names');
-        expect($data['tools'][0]['file_search']['file_search_store_names'])->toBe(['fileSearchStores/test-store-456']);
+        // A provider tool's options are a MAP, so they go out as a JSON object
+        // even when empty — see Prism\Prism\Support\JsonMap.
+        expect($data['tools'][0]['file_search'])->toBeInstanceOf(stdClass::class);
+        expect($data['tools'][0]['file_search'])->toHaveProperty('file_search_store_names');
+        expect($data['tools'][0]['file_search']->file_search_store_names)->toBe(['fileSearchStores/test-store-456']);
 
         return true;
     });
@@ -310,8 +313,13 @@ it('emits step start and step finish events', function (): void {
     expect($stepStartEvents)->toHaveCount(1);
 
     // Check for StepFinishEvent before StreamEndEvent
-    $stepFinishEvents = array_filter($events, fn (StreamEvent $e): bool => $e instanceof StepFinishEvent);
+    $stepFinishEvents = array_values(array_filter($events, fn (StreamEvent $e): bool => $e instanceof StepFinishEvent));
     expect($stepFinishEvents)->toHaveCount(1);
+
+    // Verify StepFinishEvent contains usage data
+    expect($stepFinishEvents[0]->usage)->not->toBeNull();
+    expect($stepFinishEvents[0]->usage->promptTokens)->toBe(21);
+    expect($stepFinishEvents[0]->usage->completionTokens)->toBe(47);
 
     // Verify order: StreamStart -> StepStart -> ... -> StepFinish -> StreamEnd
     $eventTypes = array_map(get_class(...), $events);
@@ -439,4 +447,88 @@ it('can generate text stream using multiple parallel tool calls', function (): v
     expect($toolCalls[0]->reasoningId)->not->toBeNull();
     expect($toolCalls[1]->reasoningId)->not->toBeNull();
     expect($toolCalls[0]->reasoningId)->toBe($toolCalls[1]->reasoningId);
+});
+
+it('sends topK in generationConfig for streaming', function (): void {
+    FixtureResponse::fakeResponseSequence('*', 'gemini/stream-basic-text');
+
+    $events = [];
+    $response = Prism::text()
+        ->using(Provider::Gemini, 'gemini-2.0-flash')
+        ->withPrompt('Explain how AI works')
+        ->usingTopK(40)
+        ->asStream();
+
+    foreach ($response as $event) {
+        $events[] = $event;
+    }
+
+    Http::assertSent(function (Request $request): true {
+        $data = $request->data();
+
+        expect($data['generationConfig'])
+            ->toHaveKey('topK')
+            ->and($data['generationConfig']['topK'])->toBe(40);
+
+        return true;
+    });
+});
+
+it('passes service_tier in the request body for streaming', function (): void {
+    FixtureResponse::fakeResponseSequence('*', 'gemini/stream-basic-text');
+
+    $response = Prism::text()
+        ->using(Provider::Gemini, 'gemini-2.5-flash')
+        ->withPrompt('Summarize this document.')
+        ->withProviderOptions(['serviceTier' => 'flex'])
+        ->asStream();
+
+    // Consume the stream
+    foreach ($response as $event) {
+        //
+    }
+
+    Http::assertSent(function (Request $request): true {
+        $data = $request->data();
+
+        expect($data)->toHaveKey('service_tier')
+            ->and($data['service_tier'])->toBe('flex');
+
+        return true;
+    });
+});
+
+it('keeps tools a JSON array when streaming with provider and custom tools', function (): void {
+    FixtureResponse::fakeResponseSequence('*', 'gemini/stream-with-tools-search-grounding');
+
+    $tools = [
+        Tool::as('search_games')
+            ->for('useful for searching current games times in the city')
+            ->withStringParameter('city', 'The city that you want the game times for')
+            ->using(fn (string $city): string => 'The tigers game is at 3pm in detroit'),
+    ];
+
+    $response = Prism::text()
+        ->using(Provider::Gemini, 'gemini-2.5-flash')
+        ->withMaxSteps(1)
+        ->withTools($tools)
+        ->withProviderTools([new ProviderTool('google_search')])
+        ->withPrompt('What sport fixtures are on today?')
+        ->asStream();
+
+    foreach ($response as $event) {
+        // drain the stream so the request is actually dispatched
+    }
+
+    Http::assertSent(function (Request $request): true {
+        $tools = $request->data()['tools'];
+
+        // Grounding + custom tools together must stay Tool[] (a JSON array),
+        // not a mixed-key array json_encode would emit as an object.
+        expect(array_is_list($tools))->toBeTrue();
+        expect($tools[0])->toHaveKey('google_search');
+        expect($tools[1])->toHaveKey('function_declarations');
+
+        return true;
+    });
 });

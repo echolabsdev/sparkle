@@ -90,12 +90,12 @@ it('converts to array with all properties', function (): void {
 
     $array = $event->toArray();
 
-    expect($array)->toBe([
+    expect($array)->toEqual([
         'id' => 'event-123',
         'timestamp' => 1640995200,
         'tool_id' => 'tool-456',
         'tool_name' => 'calculator',
-        'arguments' => $arguments,
+        'arguments' => (object) $arguments,
         'message_id' => 'msg-789',
         'reasoning_id' => 'reasoning-101',
     ]);
@@ -118,12 +118,12 @@ it('converts to array with null reasoning id', function (): void {
 
     $array = $event->toArray();
 
-    expect($array)->toBe([
+    expect($array)->toEqual([
         'id' => 'event-123',
         'timestamp' => 1640995200,
         'tool_id' => 'tool-456',
         'tool_name' => 'text_generator',
-        'arguments' => $arguments,
+        'arguments' => (object) $arguments,
         'message_id' => 'msg-789',
         'reasoning_id' => null,
     ]);
@@ -144,7 +144,7 @@ it('handles empty arguments array', function (): void {
     );
 
     expect($event->toolCall->arguments())->toBe([])
-        ->and($event->toArray()['arguments'])->toBe([]);
+        ->and($event->toArray()['arguments'])->toEqual(new stdClass);
 });
 
 it('handles complex nested arguments', function (): void {
@@ -180,7 +180,7 @@ it('handles complex nested arguments', function (): void {
     );
 
     expect($event->toolCall->arguments())->toBe($arguments)
-        ->and($event->toArray()['arguments'])->toBe($arguments);
+        ->and($event->toArray()['arguments'])->toEqual((object) $arguments);
 });
 
 it('handles string and numeric arguments', function (): void {

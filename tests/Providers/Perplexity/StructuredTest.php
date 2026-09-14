@@ -14,7 +14,7 @@ beforeEach(function (): void {
 });
 
 it('sends the correct basic request structure', function (): void {
-    FixtureResponse::fakeResponseSequence('chat/completions', 'perplexity/structured');
+    FixtureResponse::fakeResponseSequence('v1/agent', 'perplexity/agent-structured');
 
     $response = Prism::structured()
         ->using(Provider::Perplexity, 'sonar')

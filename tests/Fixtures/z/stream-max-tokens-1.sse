@@ -1,0 +1,14 @@
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":"This"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" is"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" a"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" truncated"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" response"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" due"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" to"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" max"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" tokens"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":" limit"}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"delta":{"content":"."}}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1752805596,"model":"glm-5","choices":[{"index":0,"finish_reason":"length"}],"usage":{"prompt_tokens":50,"completion_tokens":10,"total_tokens":60}}
+data: [DONE]

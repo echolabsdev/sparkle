@@ -24,6 +24,7 @@ Currently, Prism supports image generation through:
 
 - **OpenAI**: DALL-E 2, DALL-E 3, and GPT-Image-1 models
 - **Gemini**: Gemini 2.0 Flash Preview Image Generation, Imagen 4, Imagen 3
+- **Qwen**: Qwen-Image (generation), Qwen-Image-Edit (editing & multi-image fusion)
 
 Additional providers will be added in future releases as the ecosystem evolves.
 
@@ -250,6 +251,79 @@ $response = Prism::image()
     ->generate();
 ```
 
+### Qwen Options
+
+#### Image Generation
+
+Qwen provides image generation through `qwen-image-max` and `qwen-image-plus` models:
+
+```php
+$response = Prism::image()
+    ->using(Provider::Qwen, 'qwen-image-max')
+    ->withPrompt('A cute baby sea otter floating on its back')
+    ->withProviderOptions([
+        'size' => '1328*1328',                         // Image resolution (width*height)
+        'negative_prompt' => 'low quality, blurry',    // Content to avoid
+        'prompt_extend' => true,                       // Enable prompt rewriting
+        'watermark' => false,                          // Disable watermark
+        'seed' => 42,                                  // Random seed for reproducibility
+    ])
+    ->generate();
+```
+
+> [!IMPORTANT]
+> Generated image URLs are valid for **24 hours** only. Download and save images promptly.
+
+#### Image Editing
+
+Qwen's `qwen-image-edit-max` and `qwen-image-edit-plus` models support single-image editing and multi-image fusion. Pass your images as the second parameter to `withPrompt()`:
+
+```php
+use Prism\Prism\ValueObjects\Media\Image;
+
+$response = Prism::image()
+    ->using(Provider::Qwen, 'qwen-image-edit-max')
+    ->withPrompt('Generate an image following this depth map: a red bicycle on a muddy path with dense forest', [
+        Image::fromUrl('https://example.com/depth-map.png'),
+    ])
+    ->withProviderOptions([
+        'n' => 2,                              // Output 1-6 images (max/plus models)
+        'size' => '1536*1024',                 // Custom output resolution
+        'negative_prompt' => 'low quality',    // Content to avoid
+        'prompt_extend' => true,               // Enable prompt rewriting
+        'watermark' => false,                  // Disable watermark
+    ])
+    ->generate();
+```
+
+For multi-image fusion, pass multiple images — the model can combine elements from up to 3 input images:
+
+```php
+$response = Prism::image()
+    ->using(Provider::Qwen, 'qwen-image-edit-max')
+    ->withPrompt('The girl in image 1 wearing the black dress from image 2, sitting in the pose of image 3', [
+        Image::fromUrl('https://example.com/person.png'),
+        Image::fromUrl('https://example.com/dress.png'),
+        Image::fromUrl('https://example.com/pose.png'),
+    ])
+    ->withProviderOptions([
+        'n' => 2,
+        'size' => '1024*1536',
+    ])
+    ->generate();
+```
+
+You can also pass images from local files or base64 data:
+
+```php
+$response = Prism::image()
+    ->using(Provider::Qwen, 'qwen-image-edit-max')
+    ->withPrompt('Add a sunset sky to the background', [
+        Image::fromLocalPath('/path/to/photo.png'),
+    ])
+    ->generate();
+```
+
 ## Testing
 
 Prism provides convenient fakes for testing image generation:
@@ -272,4 +346,4 @@ test('can generate images', function () {
 });
 ```
 
-Need help with a specific provider or use case? Check the [openai documentation](/providers/openai) or [gemini documentation](/providers/gemini) for detailed configuration options and examples.
+Need help with a specific provider or use case? Check the [openai documentation](/providers/openai), [gemini documentation](/providers/gemini), or [qwen documentation](/providers/qwen) for detailed configuration options and examples.

@@ -56,6 +56,8 @@ class Stream
      */
     public function handle(Request $request): Generator
     {
+        yield from $this->resolveToolApprovalsAndYieldEvents($request, EventID::generate());
+
         $this->state->reset();
         $response = $this->sendRequest($request);
 
@@ -136,7 +138,8 @@ class Stream
                 promptTokens: $usageData['input_tokens'] ?? 0,
                 completionTokens: $usageData['output_tokens'] ?? 0,
                 cacheWriteInputTokens: $usageData['cache_creation_input_tokens'] ?? null,
-                cacheReadInputTokens: $usageData['cache_read_input_tokens'] ?? null
+                cacheReadInputTokens: $usageData['cache_read_input_tokens'] ?? null,
+                thoughtTokens: $usageData['output_tokens_details']['thinking_tokens'] ?? null
             ));
         }
 
@@ -243,7 +246,8 @@ class Stream
                 promptTokens: $currentUsage->promptTokens,
                 completionTokens: $usageData['output_tokens'],
                 cacheWriteInputTokens: $currentUsage->cacheWriteInputTokens,
-                cacheReadInputTokens: $currentUsage->cacheReadInputTokens
+                cacheReadInputTokens: $currentUsage->cacheReadInputTokens,
+                thoughtTokens: $usageData['output_tokens_details']['thinking_tokens'] ?? $currentUsage->thoughtTokens
             ));
         }
 
@@ -499,7 +503,17 @@ class Stream
 
         // Execute tools and emit results
         $toolResults = [];
-        yield from $this->callToolsAndYieldEvents($request->tools(), $toolCalls, $this->state->messageId(), $toolResults);
+        $hasPendingToolCalls = false;
+        yield from $this->callToolsAndYieldEventsWithPending($request->tools(), $toolCalls, $this->state->messageId(), $toolResults, $hasPendingToolCalls);
+
+        if ($hasPendingToolCalls) {
+            // Client-executed or approval-required tool calls: end the stream
+            // with FinishReason::ToolCalls so the consumer resolves and resumes.
+            $this->state->markStepFinished();
+            yield from $this->yieldToolCallsFinishEvents($this->state);
+
+            return;
+        }
 
         // Add messages to request for next turn
         if ($toolResults !== []) {
@@ -513,10 +527,13 @@ class Stream
             $request->addMessage(new AssistantMessage(
                 content: $this->state->currentText(),
                 toolCalls: $toolCalls,
-                additionalContent: in_array($this->state->currentThinking(), ['', '0'], true) ? [] : [
-                    'thinking' => $this->state->currentThinking(),
-                    'thinking_signature' => $this->state->currentThinkingSignature(),
-                ]
+                additionalContent: Arr::whereNotNull([
+                    'thinking' => $this->state->currentThinking() ?: null,
+                    'thinking_signature' => $this->state->currentThinkingSignature() ?: null,
+                    'citations' => $this->state->citations() ?: null,
+                    'provider_tool_calls' => array_values($this->state->providerToolCalls()) ?: null,
+                    'provider_tool_results' => array_values($this->state->providerToolResults()) ?: null,
+                ]),
             ));
 
             $request->addMessage(new ToolResultMessage($toolResults));
