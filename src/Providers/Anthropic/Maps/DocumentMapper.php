@@ -58,7 +58,10 @@ class DocumentMapper extends ProviderMediaMapper
         } elseif ($this->media->mimeType() && Str::startsWith($this->media->mimeType(), 'text/')) {
             $payload['source'] = [
                 'type' => 'text',
-                'media_type' => $this->media->mimeType(),
+                // Anthropic's text source takes text/plain and nothing else, so
+                // text/markdown, text/csv or a charset parameter failed the whole
+                // request. The content is sent as given.
+                'media_type' => 'text/plain',
                 'data' => $this->media->rawContent(),
             ];
         } else {
