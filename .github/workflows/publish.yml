@@ -1,4 +1,9 @@
-name: Release
+name: Publish
+
+# Named `publish.yml`, the name every package in the estate publishes from.
+# Packagist does not bind to a workflow filename the way npm's and PyPI's trusted
+# publishers do, so nothing breaks here if it changes. Keep it anyway: one name
+# means `gh run list --workflow=publish.yml` finds the publish run in any repo.
 
 # A release is a tag push, and nothing else. No manual dispatch: a release that
 # can be cut from a branch is a release no commit claims.

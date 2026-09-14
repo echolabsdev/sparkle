@@ -1,6 +1,6 @@
 # Releasing
 
-A release is a tag push. `.github/workflows/release.yml` does the rest.
+A release is a tag push. `.github/workflows/publish.yml` does the rest.
 
 There is **no upload step and no token**. Composer resolves versions from git
 tags and Packagist mirrors them over a webhook, so pushing the tag *is* the
@@ -20,7 +20,7 @@ proving the tag was tested, and proving the package actually became installable.
    **The tag annotation is the changelog.** These packages ship no CHANGELOG
    file, so what you write in the tag message is what a consumer reads on the
    release page and what arrives in their inbox. The workflow publishes it
-   verbatim with `--notes-from-tag`.
+   verbatim.
 
    A lightweight tag — `git tag v0.2.0` with no `-a` and no message — FAILS the
    release step rather than publishing an empty release. If a version is worth
