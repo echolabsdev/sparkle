@@ -2,8 +2,13 @@
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Prism\Prism\ValueObjects\GeneratedAudio;
+use Prism\Prism\ValueObjects\GeneratedImage;
+use Prism\Prism\ValueObjects\Media\Audio;
+use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
 use Prism\Prism\ValueObjects\Media\Media;
+use Prism\Prism\ValueObjects\Media\Video;
 
 describe('creation', function (): void {
     it('can create from file ID', function (): void {
@@ -259,6 +264,76 @@ describe('hasBase64 answers whether the bytes are IN HAND', function (): void {
         } catch (InvalidArgumentException) {
             // refused, as asserted elsewhere
         }
+
+        Http::assertSentCount(0);
+    });
+});
+
+describe('the stored form', function (): void {
+    // What a conversation is persisted as. The same keys and values both ports
+    // write, and pinned across all three languages by prism-parity's
+    // media-roundtrip suite. Each test here is a defect the reference had.
+
+    it('carries the bytes, whatever read the media before', function (): void {
+        // toArray() used to write the base64 FIELD, filled only if something had
+        // called base64() first. The same object then had two stored forms, and
+        // a message saved before it was sent stored no content at all.
+        $fresh = Image::fromRawContent('PNGBYTES', 'image/png');
+        $read = Image::fromRawContent('PNGBYTES', 'image/png');
+        $read->base64();
+
+        expect($fresh->toArray())->toBe($read->toArray())
+            ->and($fresh->toArray()['base64'])->toBe(base64_encode('PNGBYTES'));
+    });
+
+    it('keeps a text document\'s text', function (): void {
+        // The worst case of the above: nothing but the title survived, and
+        // Anthropic's document mapper reads rawContent(), which never cached, so
+        // the text was missing even after the message had been sent.
+        expect(Document::fromText('the whole document', 'Title')->toArray())
+            ->toMatchArray(['base64' => base64_encode('the whole document'), 'document_title' => 'Title']);
+    });
+
+    it('stores the bytes of a local or storage file, and never its path', function (): void {
+        Storage::fake();
+        Storage::put('uploads/diamond.png', file_get_contents('tests/Fixtures/diamond.png'));
+
+        foreach ([Image::fromLocalPath('tests/Fixtures/diamond.png'), Image::fromStoragePath('uploads/diamond.png')] as $media) {
+            $stored = $media->toArray();
+            $json = json_encode($stored, JSON_UNESCAPED_SLASHES);
+
+            expect($stored)->not->toHaveKeys(['local_path', 'storage_path'])
+                ->and($stored['base64'])->toBe(base64_encode(file_get_contents('tests/Fixtures/diamond.png')))
+                // Measured on the output, not the keys: a path under another
+                // name would still be a path.
+                ->and($json)->not->toContain('diamond.png');
+        }
+    });
+
+    it('names what the media is', function (): void {
+        expect(Image::fromBase64('AA==')->toArray()['kind'])->toBe('image')
+            ->and(Audio::fromBase64('AA==')->toArray()['kind'])->toBe('audio')
+            ->and(Video::fromBase64('AA==')->toArray()['kind'])->toBe('video')
+            ->and(Document::fromBase64('AA==')->toArray()['kind'])->toBe('document')
+            ->and((new GeneratedImage(base64: 'AA=='))->toArray()['kind'])->toBe('image')
+            ->and((new GeneratedAudio(base64: 'AA=='))->toArray()['kind'])->toBe('audio')
+            // A bare Media is none of the four, and says so rather than guessing.
+            ->and(Media::fromBase64('AA==')->toArray()['kind'])->toBeNull();
+    });
+
+    it('stores a url as a url, without fetching it', function (): void {
+        // Carrying the bytes must not mean resolving them: base64() reads only
+        // what is already held.
+        Http::fake(['*' => Http::response('metadata')]);
+
+        expect(Image::fromUrl('http://169.254.169.254/latest/meta-data/')->toArray())->toBe([
+            'kind' => 'image',
+            'url' => 'http://169.254.169.254/latest/meta-data/',
+            'base64' => null,
+            'mime_type' => null,
+            'file_id' => null,
+            'filename' => null,
+        ]);
 
         Http::assertSentCount(0);
     });

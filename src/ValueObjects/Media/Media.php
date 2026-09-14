@@ -19,6 +19,15 @@ class Media implements Arrayable
 {
     use HasProviderOptions;
 
+    /**
+     * What this media IS, written into the stored form under `kind`.
+     *
+     * Each concrete type overrides it — `image`, `audio`, `video`, `document` —
+     * with the same key and values both ports store. Null only for a bare
+     * `Media`, which is none of the four.
+     */
+    public const KIND = null;
+
     protected ?string $fileId = null;
 
     protected ?string $localPath = null;
@@ -406,18 +415,39 @@ class Media implements Arrayable
     }
 
     /**
+     * The stored form: what a conversation is persisted as, and rebuilt from.
+     *
+     * The same keys and values as both ports' serialisation, pinned by the
+     * `media-roundtrip` suite in prism-parity. Three things changed to get
+     * there, and each was a defect rather than a style:
+     *
+     * - **The bytes are always here.** This used to write the `base64` FIELD,
+     *   which is filled only when the media was built from base64 or something
+     *   had since called `base64()`. So one object had two stored forms
+     *   depending on what read it earlier, and a message saved before it was
+     *   sent — a `fromRawContent()` image, a `Document::fromText()` — stored no
+     *   content at all and could not be replayed. `base64()` is computed from
+     *   bytes already held; it never makes a network request, so a URL-only
+     *   payload still stores `null`.
+     * - **No file paths.** `local_path` and `storage_path` recorded where the
+     *   file lived on the machine that serialised it. Read back, that names a
+     *   different file, or none, on any other host — and a temp upload path is
+     *   reused. The bytes travel instead.
+     * - **A `kind`.** An Image, an Audio and an untitled Document used to
+     *   serialise identically, so anything rebuilding a message had to record
+     *   the class separately or guess.
+     *
      * @return array<string, mixed>
      */
     #[\Override]
     public function toArray(): array
     {
         return [
+            'kind' => static::KIND,
             'url' => $this->url,
-            'base64' => $this->base64,
+            'base64' => $this->base64(),
             'mime_type' => $this->mimeType,
             'file_id' => $this->fileId,
-            'local_path' => $this->localPath,
-            'storage_path' => $this->storagePath,
             'filename' => $this->filename,
         ];
     }
