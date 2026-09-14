@@ -75,8 +75,10 @@ jobs:
 
       # Every direct dependency must be approved on the org allowlist and still
       # maintained. The list is fetched, never vendored, so there is no copy here
-      # to drift. The release guard requires this workflow to have succeeded for
-      # the tagged commit, so a failure here also stops a publish.
+      # to drift. This has to pass BEFORE a tag is pushed: Packagist publishes a
+      # Composer package the moment its tag exists, so the release guard, which
+      # requires this workflow to have succeeded, can only withhold the GitHub
+      # release. It cannot withdraw a version.
       - name: Fetch the third-party allowlist
         uses: actions/checkout@v4
         with:

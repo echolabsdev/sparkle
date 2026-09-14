@@ -27,9 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Run again at publish time, not only when the commit landed: a dependency
-      # that has since gone unmaintained, or an approval since withdrawn from the
-      # allowlist, should stop the release.
+      # Run again when the tag lands, not only when the commit did: a dependency
+      # that has since gone unmaintained, or an approval since withdrawn, fails
+      # here. That withholds the GitHub release and flags the tag. It does NOT
+      # stop the publish -- Packagist already has the version once the tag is
+      # pushed -- so the check that matters is the one in tests.yml, before tagging.
       - name: Fetch the third-party allowlist
         uses: actions/checkout@v4
         with:
