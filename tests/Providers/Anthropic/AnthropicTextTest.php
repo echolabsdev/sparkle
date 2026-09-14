@@ -967,6 +967,7 @@ describe('Anthropic thinking', function (): void {
             "Prism's enabled shape is still translated" => [['enabled' => true, 'budgetTokens' => 2048], ['type' => 'enabled', 'budget_tokens' => 2048]],
             "Prism's enabled shape without an integer budget" => [['enabled' => true, 'budgetTokens' => '4000'], ['type' => 'enabled', 'budget_tokens' => 1024]],
             "Prism's spelling for off" => [['enabled' => false], null],
+            'false' => [false, null],
             'an empty map' => [[], null],
         ]);
 

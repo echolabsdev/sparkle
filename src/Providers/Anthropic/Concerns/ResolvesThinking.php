@@ -30,6 +30,13 @@ trait ResolvesThinking
 
         $thinking = $request->providerOptions('thinking');
 
+        // `false` asks for no thinking. It was ignored before thinking shapes
+        // were sent as given, and sending it would turn a config such as
+        // env('THINKING', false) into a 400 on every request.
+        if ($thinking === false) {
+            return null;
+        }
+
         if (! is_array($thinking)) {
             return $thinking;
         }
