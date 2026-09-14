@@ -6,6 +6,7 @@ namespace Prism\Prism\Text;
 
 use Illuminate\Support\Collection;
 use Prism\Prism\ValueObjects\Messages\AssistantMessage;
+use Prism\Prism\ValueObjects\Messages\ToolResultMessage;
 use Prism\Prism\ValueObjects\Usage;
 
 readonly class ResponseBuilder
@@ -39,11 +40,23 @@ readonly class ResponseBuilder
             $additionalContent['provider_tool_calls'] = $finalStep->providerToolCalls;
         }
 
+        // The conversation as the request actually carried it. A run that stops
+        // on tool calls -- a tool awaiting approval, a client-executed tool, or
+        // the step budget running out -- has already added the assistant's
+        // approval requests and the results of the tools it did run. Leaving
+        // them out made the documented resume, [...$response->messages,
+        // $decisions], deny every approval ("No approval response provided")
+        // and replay tool calls with no output, which providers refuse.
         $messages->push(new AssistantMessage(
             content: $finalStep->text,
             toolCalls: $finalStep->toolCalls,
             additionalContent: $additionalContent,
+            toolApprovalRequests: $finalStep->toolApprovalRequests,
         ));
+
+        if ($finalStep->toolResults !== []) {
+            $messages->push(new ToolResultMessage($finalStep->toolResults));
+        }
 
         return new Response(
             steps: $this->steps,

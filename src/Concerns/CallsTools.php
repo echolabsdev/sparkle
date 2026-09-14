@@ -264,23 +264,25 @@ trait CallsTools
             return;
         }
 
-        $toolMessage = null;
-        $toolMessageIndex = null;
+        // EVERY tool result message after the assistant, read as one. A stopped
+        // step already carries a message with the results of the tools it did
+        // run, and the decisions arrive in another one after it. Reading only
+        // the first found the results and never the decisions, so an approved
+        // call was denied by default.
+        $toolMessageIndexes = [];
+        $toolResultsSoFar = [];
+        $approvalResponses = [];
         $messageCount = count($messages);
 
         for ($i = $assistantMessageIndex + 1; $i < $messageCount; $i++) {
             if ($messages[$i] instanceof ToolResultMessage) {
-                $toolMessage = $messages[$i];
-                $toolMessageIndex = $i;
-
-                break;
+                $toolMessageIndexes[] = $i;
+                $toolResultsSoFar = [...$toolResultsSoFar, ...$messages[$i]->toolResults];
+                $approvalResponses = [...$approvalResponses, ...$messages[$i]->toolApprovalResponses];
             }
         }
 
-        if (! $toolMessage instanceof ToolResultMessage) {
-            $toolMessage = new ToolResultMessage;
-            $toolMessageIndex = null;
-        }
+        $toolMessage = new ToolResultMessage($toolResultsSoFar, $approvalResponses);
 
         $toolCallIdToApprovalId = [];
         foreach ($assistantMessage->toolApprovalRequests as $approvalRequest) {
@@ -350,10 +352,10 @@ trait CallsTools
             return;
         }
 
-        if ($toolMessageIndex !== null) {
+        if ($toolMessageIndexes !== []) {
             $request->setMessages(array_values(array_filter(
                 $messages,
-                fn (int $index): bool => $index !== $toolMessageIndex,
+                fn (int $index): bool => ! in_array($index, $toolMessageIndexes, true),
                 ARRAY_FILTER_USE_KEY,
             )));
         }

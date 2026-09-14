@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Http;
 use Prism\Prism\Concerns\CallsTools;
 use Prism\Prism\Enums\StreamEventType;
 use Prism\Prism\Enums\ToolChoice;
+use Prism\Prism\Facades\Prism;
 use Prism\Prism\Streaming\Events\ToolApprovalRequestEvent;
 use Prism\Prism\Streaming\Events\ToolResultEvent;
 use Prism\Prism\Streaming\StreamState;
@@ -17,6 +19,7 @@ use Prism\Prism\ValueObjects\ToolApprovalRequest;
 use Prism\Prism\ValueObjects\ToolApprovalResponse;
 use Prism\Prism\ValueObjects\ToolCall;
 use Prism\Prism\ValueObjects\ToolResult;
+use Tests\Fixtures\FixtureResponse;
 
 class ToolApprovalTestHandler
 {
@@ -1261,5 +1264,106 @@ describe('ToolApprovalRequestEvent', function (): void {
             ->and($array['tool_id'])->toBe('call-1')
             ->and($array['arguments'])->toEqual((object) ['key' => 'value'])
             ->and($array['message_id'])->toBe('msg-1');
+    });
+});
+
+describe('the documented resume, through a real provider handler', function (): void {
+    // Every other test here builds the resumed messages by hand, with the
+    // approval requests already on the assistant message. The documented flow
+    // resumes from $response->messages, and that list left out the approval
+    // requests and the results of the tools the stopped step did run. An
+    // approved call was denied by default ("No approval response provided"),
+    // and the other call went back with no output. Driven through the real
+    // handlers over faked HTTP, because the seam was between them.
+
+    function approvalTools(array &$ran): array
+    {
+        return [
+            \Prism\Prism\Facades\Tool::as('weather')->for('Weather')->withStringParameter('city', 'City')
+                ->using(function (string $city) use (&$ran): string {
+                    $ran['weather']++;
+
+                    return "The weather in {$city} will be 75° and sunny";
+                })
+                ->requiresApproval(),
+            \Prism\Prism\Facades\Tool::as('search')->for('Search')->withStringParameter('query', 'Query')
+                ->using(function (string $query) use (&$ran): string {
+                    $ran['search']++;
+
+                    return 'The tigers game is today at 3pm in detroit';
+                }),
+        ];
+    }
+
+    it('runs an approved call once, and sends every call its output (OpenAI)', function (bool $approved, string $weatherOutput): void {
+        FixtureResponse::fakeResponseSequence('v1/responses', 'openai/generate-text-with-multiple-tools');
+        $ran = ['weather' => 0, 'search' => 0];
+
+        $response = Prism::text()->using('openai', 'gpt-4o')->withTools(approvalTools($ran))->withMaxSteps(3)
+            ->withPrompt('What time is the tigers game today and should I wear a coat?')->asText();
+
+        $request = $response->steps->last()->toolApprovalRequests[0];
+
+        expect($response->messages->last())->toBeInstanceOf(ToolResultMessage::class)
+            ->and($response->messages[1]->toolApprovalRequests)->toEqual([$request]);
+
+        Prism::text()->using('openai', 'gpt-4o')->withTools(approvalTools($ran))->withMaxSteps(3)
+            ->withMessages([...$response->messages, new ToolResultMessage([], [
+                new ToolApprovalResponse($request->approvalId, $approved, $approved ? null : 'Not today'),
+            ])])
+            ->asText();
+
+        $outputs = collect(json_decode((string) Http::recorded()[1][0]->body(), true)['input'])
+            ->where('type', 'function_call_output')
+            ->pluck('output', 'call_id')
+            ->all();
+
+        expect($ran)->toBe(['weather' => $approved ? 1 : 0, 'search' => 1])
+            ->and($outputs)->toBe([
+                'call_AZkZynIOpPQwJ4fyZETY4eTP' => 'The tigers game is today at 3pm in detroit',
+                'call_huHZrdh8RFUy8a8Uqbb2qV1x' => $weatherOutput,
+            ]);
+    })->with([
+        'approved' => [true, 'The weather in Detroit will be 75° and sunny'],
+        'denied' => [false, 'Not today'],
+    ]);
+
+    it('runs an approved call from a later step (Anthropic)', function (): void {
+        FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/generate-text-with-multiple-tools');
+        $ran = ['weather' => 0, 'search' => 0];
+
+        $response = Prism::text()->using('anthropic', 'claude-sonnet-4-6')->withTools(approvalTools($ran))->withMaxSteps(3)
+            ->withPrompt('What time is the tigers game today and should I wear a coat?')->asText();
+
+        $request = $response->steps->last()->toolApprovalRequests[0];
+
+        Prism::text()->using('anthropic', 'claude-sonnet-4-6')->withTools(approvalTools($ran))->withMaxSteps(3)
+            ->withMessages([...$response->messages, new ToolResultMessage([], [new ToolApprovalResponse($request->approvalId, true)])])
+            ->asText();
+
+        $messages = json_decode((string) Http::recorded()[2][0]->body(), true)['messages'];
+        $toolResults = collect($messages)->flatMap(fn (array $m): array => is_array($m['content']) ? $m['content'] : [])
+            ->where('type', 'tool_result')->pluck('content', 'tool_use_id')->all();
+
+        expect($ran)->toBe(['weather' => 1, 'search' => 1])
+            ->and($toolResults)->toBe([
+                'toolu_011Arf1KyG1ViN7sySoSjTPa' => 'The tigers game is today at 3pm in detroit',
+                'toolu_01RXXxkijxvGSWPG4Aa8ZTE3' => 'The weather in Detroit will be 75° and sunny',
+            ]);
+    });
+
+    it('keeps the results of a run that stopped at its step budget', function (): void {
+        // The same omission without any approval: withMaxSteps(1) runs the
+        // tools and stops, and a conversation continued from $response->messages
+        // replayed the calls with no results.
+        FixtureResponse::fakeResponseSequence('v1/responses', 'openai/generate-text-with-multiple-tools');
+        $ran = ['weather' => 0, 'search' => 0];
+        $tools = array_map(fn ($tool) => $tool->requiresApproval(false), approvalTools($ran));
+
+        $response = Prism::text()->using('openai', 'gpt-4o')->withTools($tools)->withMaxSteps(1)
+            ->withPrompt('What time is the tigers game today and should I wear a coat?')->asText();
+
+        expect($response->messages->last())->toBeInstanceOf(ToolResultMessage::class)
+            ->and(collect($response->messages->last()->toolResults)->pluck('toolName')->sort()->values()->all())->toBe(['search', 'weather']);
     });
 });
