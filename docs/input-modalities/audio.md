@@ -42,12 +42,12 @@ $response = Prism::text()
     )
     ->asText();
 
-// From a URL
+// From a URL you trust — fetched explicitly before sending
 $response = Prism::text()
     ->using(Provider::Gemini, 'gemini-1.5-flash')
     ->withPrompt(
         'Analyze this audio:',
-        [Audio::fromUrl(url: 'https://example.com/audio.mp3')]
+        [Audio::fromUrl(url: 'https://example.com/audio.mp3')->fetchUrlContent()]
     )
     ->asText();
 

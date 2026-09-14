@@ -82,17 +82,20 @@ class Audio
     {
         $audioInput = $request->input()->url();
 
-        // If "URL" is actually a local file path, or if we have raw content, convert to data URL
-        if ($audioInput && is_file($audioInput)) {
-            // URL is actually a local file path
-            $content = file_get_contents($audioInput);
-            if ($content === false) {
-                throw new PrismException("Failed to read audio file: {$audioInput}");
-            }
-            $base64 = base64_encode($content);
-            $mimeType = mime_content_type($audioInput) ?: 'audio/mpeg';
-            $audioInput = "data:{$mimeType};base64,{$base64}";
-        } elseif (! $audioInput && $request->input()->rawContent()) {
+        // A URL IS SENT AS A URL. Replicate fetches it on its own side.
+        //
+        // This used to check `is_file($audioInput)` first and, when the "URL"
+        // named a file on this machine, read it and upload its bytes. The URL is
+        // whatever string the caller passed to `Audio::fromUrl()`, which does not
+        // validate a scheme — so a request-derived value of `/etc/passwd` had
+        // this process read that file and send it to a third party. That is the
+        // same class of defect as G-44, where reading a media URL fetched it
+        // server-side, and the release that removed that fetch could not also
+        // claim URLs are no longer dereferenced here while this branch existed.
+        //
+        // A local file has its own constructor, `Audio::fromLocalPath()`, whose
+        // bytes arrive below as raw content. That is the route for a path.
+        if (! $audioInput && $request->input()->rawContent()) {
             // No URL but we have content (using fromLocalPath)
             $base64 = $request->input()->base64();
             $mimeType = $request->input()->mimeType() ?? 'audio/mpeg';

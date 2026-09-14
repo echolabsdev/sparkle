@@ -203,6 +203,17 @@ class Media implements Arrayable
         return $this->mimeType !== null;
     }
 
+    /**
+     * Can this payload produce its bytes WITHOUT a network request?
+     *
+     * A URL used to answer true here, because reading its bytes fetched it.
+     * That fetch is gone (see {@see self::rawContent()}), so a URL on its own
+     * no longer has content this object can produce — call
+     * {@see self::fetchUrlContent()} first if you mean to resolve it.
+     *
+     * A local or storage path still answers true: both read the file at
+     * construction, so the bytes are already held.
+     */
     public function hasRawContent(): bool
     {
         if ($this->base64 !== null) {
@@ -211,11 +222,8 @@ class Media implements Arrayable
         if ($this->rawContent !== null) {
             return true;
         }
-        if ($this->isFile()) {
-            return true;
-        }
 
-        return $this->isUrl();
+        return $this->isFile();
     }
 
     public function hasUrl(): bool
@@ -243,6 +251,29 @@ class Media implements Arrayable
         return $this->url;
     }
 
+    /**
+     * The payload's bytes, or null when they are not already obtainable.
+     *
+     * READING THIS NEVER MAKES A NETWORK REQUEST. It used to: a URL payload
+     * fetched itself here, through a bare `Http::get()` with no host allow-list,
+     * no private-address check and redirects followed. And Prism reads media
+     * bytes on ordinary provider calls, so an application that built
+     * `fromUrl()` from request input and sent it to a provider that inlines
+     * media had this process fetch whatever URL it named — a cloud metadata
+     * endpoint included. Verified, not supposed.
+     *
+     * Both ports already refused to do this, and said why in their own words:
+     * reading a property must never perform an outbound request. The reference
+     * was the outlier and now agrees with them.
+     *
+     * To resolve a URL, call {@see self::fetchUrlContent()} — explicitly, with a
+     * URL you have decided to trust. That call is unguarded in all three
+     * languages, deliberately visible rather than implicit.
+     *
+     * Removing the URL branch also fixed an ordering defect: a payload carrying
+     * BOTH a url and base64 used to fetch the url and ignore the bytes it
+     * already held.
+     */
     public function rawContent(): ?string
     {
         if ($this->rawContent !== null && $this->rawContent !== '') {
@@ -255,22 +286,35 @@ class Media implements Arrayable
             $this->rawContent = $content === false ? null : $content;
         } elseif ($this->storagePath) {
             $this->rawContent = Storage::get($this->storagePath);
-        } elseif ($this->isUrl()) {
-            $this->fetchUrlContent();
-        } elseif ($this->hasBase64()) {
-            $this->rawContent = base64_decode((string) $this->base64);
+        } elseif ($this->base64 !== null) {
+            $this->rawContent = base64_decode($this->base64);
         }
 
         return $this->rawContent;
     }
 
+    /**
+     * The payload as base64, or null when there are no bytes to encode.
+     *
+     * Null for a URL-only payload rather than `''`. It used to fetch the URL and
+     * encode the result; with no fetch, encoding `(string) null` would cache and
+     * return an empty string, which a provider mapper sends as an empty image
+     * rather than failing. Null is what both ports return, and it is the value a
+     * caller can actually branch on.
+     */
     public function base64(): ?string
     {
-        if ($this->base64) {
+        if ($this->base64 !== null && $this->base64 !== '') {
             return $this->base64;
         }
 
-        return $this->base64 = base64_encode((string) $this->rawContent());
+        $content = $this->rawContent();
+
+        if ($content === null) {
+            return null;
+        }
+
+        return $this->base64 = base64_encode($content);
     }
 
     public function mimeType(): ?string
@@ -301,23 +345,45 @@ class Media implements Arrayable
             return $resource;
         }
 
-        if ($this->url) {
-            $this->fetchUrlContent();
-
+        if ($this->rawContent || $this->base64) {
             return $this->createStreamFromContent($this->rawContent());
         }
 
-        if ($this->rawContent || $this->base64) {
-            return $this->createStreamFromContent($this->rawContent());
+        // A URL is NOT fetched to make a stream. This path used to, and every
+        // audio handler and OpenAI image edits reach it on an ordinary call —
+        // so a request-derived `Audio::fromUrl()` had this process fetch the
+        // URL. Refused with the explicit alternative named, because a caller
+        // who meant to resolve a trusted URL needs to know how.
+        if ($this->url !== null) {
+            throw new InvalidArgumentException(
+                'Media built from a URL has no bytes to stream, and Prism no longer fetches a URL implicitly. '
+                .'Call fetchUrlContent() first, with a URL you have decided to trust — reading media bytes used '
+                .'to fetch them automatically, which made any request-derived URL a server-side fetch.'
+            );
         }
 
         throw new InvalidArgumentException('Cannot create resource from media');
     }
 
-    public function fetchUrlContent(): void
+    /**
+     * Resolve a URL payload's bytes. EXPLICIT, and the only thing that does.
+     *
+     * Nothing in Prism calls this for you any more. That is the point: reading
+     * media bytes used to call it implicitly, which turned a request-derived URL
+     * into a server-side fetch on ordinary provider calls.
+     *
+     * **This method is unguarded** — no host allow-list, no private-address
+     * check — exactly as the TypeScript and Python ports' explicit fetch is.
+     * Calling it with a URL taken from user input is still a server-side
+     * request forgery; the difference is that it is now a line you wrote rather
+     * than a side effect of reading a property. Validate the URL first.
+     *
+     * Returns the payload so the call reads as a step: `$image->fetchUrlContent()`.
+     */
+    public function fetchUrlContent(): static
     {
         if (! $this->url) {
-            return;
+            return $this;
         }
 
         /** @var Response */
@@ -335,6 +401,8 @@ class Media implements Arrayable
         }
 
         $this->rawContent = $content;
+
+        return $this;
     }
 
     /**

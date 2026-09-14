@@ -262,7 +262,10 @@ describe('Image support with Gemini', function (): void {
                 new UserMessage(
                     'What is this image',
                     additionalContent: [
-                        Image::fromUrl($image),
+                        // EXPLICIT. Prism fetched this URL implicitly before G-44, through an
+                        // unguarded request; the test's intent — send media that lives at a
+                        // URL — is kept, by the call a caller now has to write.
+                        Image::fromUrl($image)->fetchUrlContent(),
                     ],
                 ),
             ])

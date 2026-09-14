@@ -21,12 +21,17 @@ class ImageMapper extends ProviderMediaMapper
         return Provider::Ollama;
     }
 
+    /**
+     * Ollama takes image BYTES only — it has no way to accept a URL.
+     *
+     * This used to answer true for a URL, because reading the image's bytes
+     * fetched it. With that fetch gone, answering true would pass validation
+     * and then send `null` as the image, which is the silent failure the change
+     * must not introduce — and nothing tested an Ollama URL image, so nothing
+     * would have said so.
+     */
     protected function validateMedia(): bool
     {
-        if ($this->media->isUrl()) {
-            return true;
-        }
-
         return $this->media->hasRawContent();
     }
 }

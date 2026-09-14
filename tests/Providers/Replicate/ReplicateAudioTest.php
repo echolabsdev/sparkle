@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\ValueObjects\Media\Audio;
 use Tests\Fixtures\FixtureResponse;
+use Throwable;
 
 beforeEach(function (): void {
     config()->set('prism.providers.replicate.api_key', env('REPLICATE_API_KEY', 'r8_test1234'));
@@ -98,6 +99,57 @@ describe('Text-to-Speech for Replicate', function (): void {
 });
 
 describe('Speech-to-Text for Replicate', function (): void {
+    it('does NOT read a local file named as a url, and sends the string as given', function (): void {
+        // The handler used to check is_file() on the url and upload the file it
+        // named. fromUrl() does not validate a scheme, so a request-derived
+        // "/etc/passwd" was read off this machine and sent to a third party.
+        // Measured on what leaves the process, not on the branch taken.
+        $marker = 'SECRET-LOCAL-FILE-CONTENTS-'.bin2hex(random_bytes(6));
+        $path = tempnam(sys_get_temp_dir(), 'replicate');
+        file_put_contents($path, $marker);
+
+        Http::fake(['*' => Http::response(['id' => 'p1', 'status' => 'failed', 'error' => 'stop here'])]);
+
+        try {
+            Prism::audio()
+                ->using('replicate', 'vaibhavs10/incredibly-fast-whisper')
+                ->withInput(Audio::fromUrl($path))
+                ->asText();
+        } catch (Throwable) {
+            // The provider answer does not matter; what was SENT does.
+        } finally {
+            @unlink($path);
+        }
+
+        $sent = collect(Http::recorded())->map(fn (array $pair): string => (string) $pair[0]->body())->implode("\n");
+
+        expect($sent)->not->toContain($marker)
+            ->and($sent)->not->toContain(base64_encode($marker))
+            // The positive control: the path string itself did go out, so this
+            // is not passing because no request was made at all.
+            ->and($sent)->toContain(json_encode($path) === false ? $path : trim((string) json_encode($path), '"'));
+    });
+
+    it('still transcribes a local file through fromLocalPath', function (): void {
+        // The route a path should always have taken, and the one that remains.
+        $path = __DIR__.'/../../Fixtures/sample-audio.wav';
+
+        Http::fake(['*' => Http::response(['id' => 'p1', 'status' => 'failed', 'error' => 'stop here'])]);
+
+        try {
+            Prism::audio()
+                ->using('replicate', 'vaibhavs10/incredibly-fast-whisper')
+                ->withInput(Audio::fromLocalPath($path))
+                ->asText();
+        } catch (Throwable) {
+            // As above.
+        }
+
+        $sent = collect(Http::recorded())->map(fn (array $pair): string => (string) $pair[0]->body())->implode("\n");
+
+        expect($sent)->toContain('data:audio');
+    });
+
     it('can transcribe WAV audio file from data URL', function (): void {
         FixtureResponse::fakeResponseSequence('*', 'replicate/speech-to-text-wav');
 
