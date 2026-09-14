@@ -17,6 +17,7 @@ use Prism\Prism\Providers\Anthropic\Concerns\ExtractsText;
 use Prism\Prism\Providers\Anthropic\Concerns\ExtractsThinking;
 use Prism\Prism\Providers\Anthropic\Concerns\HandlesHttpRequests;
 use Prism\Prism\Providers\Anthropic\Concerns\ProcessesRateLimits;
+use Prism\Prism\Providers\Anthropic\Concerns\ResolvesThinking;
 use Prism\Prism\Providers\Anthropic\Maps\FinishReasonMap;
 use Prism\Prism\Providers\Anthropic\Maps\MessageMap;
 use Prism\Prism\Providers\Anthropic\Maps\ToolChoiceMap;
@@ -36,7 +37,7 @@ use Prism\Prism\ValueObjects\Usage;
 
 class Text
 {
-    use CallsTools, ExtractsCitations, ExtractsProviderToolCalls, ExtractsText, ExtractsThinking, HandlesHttpRequests, ProcessesRateLimits;
+    use CallsTools, ExtractsCitations, ExtractsProviderToolCalls, ExtractsText, ExtractsThinking, HandlesHttpRequests, ProcessesRateLimits, ResolvesThinking;
 
     protected Response $tempResponse;
 
@@ -293,32 +294,6 @@ class Text
         );
 
         return array_merge($providerTools, $tools);
-    }
-
-    /**
-     * @param  TextRequest  $request
-     * @return array<string, mixed>|null
-     */
-    protected static function resolveThinking(PrismRequest $request): ?array
-    {
-        if ($request->reasoningEnabled() === false) {
-            return null;
-        }
-
-        if ($request->providerOptions('thinking.type') === 'adaptive') {
-            return ['type' => 'adaptive'];
-        }
-
-        if ($request->providerOptions('thinking.enabled') === true) {
-            return [
-                'type' => 'enabled',
-                'budget_tokens' => is_int($request->providerOptions('thinking.budgetTokens'))
-                    ? $request->providerOptions('thinking.budgetTokens')
-                    : config('prism.providers.anthropic.default_thinking_budget', 1024),
-            ];
-        }
-
-        return null;
     }
 
     /**

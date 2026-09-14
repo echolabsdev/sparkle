@@ -196,6 +196,8 @@ Prism::text()
     ]);
 ```
 
+Any other `thinking` value is sent to Anthropic as given: for example its own `['type' => 'enabled', 'budget_tokens' => 2048]`, or `['type' => 'adaptive', 'display' => 'summarized']`. `withReasoning(false)` still removes it.
+
 Note that thinking tokens count towards output tokens, so you will be billed for them and your token budget must be less than the max tokens you have set for the request. If you expect a long response, ensure there's enough tokens left for the response — i.e. does (maxTokens - thinkingBudget) leave a sufficient remainder.
 
 ### Inspecting the thinking block

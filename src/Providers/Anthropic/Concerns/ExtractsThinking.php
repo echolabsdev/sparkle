@@ -14,11 +14,9 @@ trait ExtractsThinking
      */
     protected function extractThinking(array $data): array
     {
-        if ($this->request->providerOptions('thinking.enabled') !== true
-            && $this->request->providerOptions('thinking.type') !== 'adaptive') {
-            return [];
-        }
-
+        // Read from the response, not from the options. A thinking shape Prism
+        // does not spell itself is still sent, and its block and signature have
+        // to come back for the next tool-use turn to be accepted.
         $thinking = Arr::first(
             data_get($data, 'content', []),
             fn ($content): bool => data_get($content, 'type') === 'thinking'

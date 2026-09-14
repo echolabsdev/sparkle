@@ -147,6 +147,32 @@ it('sends correct schema in payload using tool mode', function (): void {
     });
 });
 
+it('does not force the structured output tool beside a thinking shape Prism does not spell', function (): void {
+    // Anthropic refuses a forced tool_choice with thinking on. The check used to
+    // recognise only Prism's spellings, which were the only ones sent; any shape
+    // is sent now, so any shape that turns thinking on has to count.
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-sonnet-4-6')
+        ->withMessages([new UserMessage('What is the weather?')])
+        ->withSchema(new ObjectSchema('weather', 'Weather information', [new StringSchema('condition', 'Weather condition')], ['condition']))
+        ->withProviderOptions([
+            'use_tool_calling' => true,
+            'thinking' => ['type' => 'enabled', 'budget_tokens' => 2048],
+        ])
+        ->asStructured();
+
+    Http::assertSent(function (Request $request): bool {
+        $payload = $request->data();
+
+        expect($payload['thinking'])->toBe(['type' => 'enabled', 'budget_tokens' => 2048])
+            ->and($payload)->not->toHaveKey('tool_choice');
+
+        return true;
+    });
+});
+
 it('sends correct temperature and top_p in payload', function (): void {
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
 

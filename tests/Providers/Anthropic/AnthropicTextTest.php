@@ -947,6 +947,56 @@ describe('Anthropic thinking', function (): void {
                 ->additionalContent->thinking_signature->toBe($expected_signature);
         });
     });
+
+    describe('shapes Prism does not spell itself', function (): void {
+        // These were dropped without an error: the request went out with no
+        // thinking, and nothing said so. They are now sent as given, as the
+        // TypeScript and Python ports send them.
+        it('sends the thinking option it is given', function (mixed $thinking, mixed $expected): void {
+            $request = Prism::text()
+                ->using('anthropic', 'claude-sonnet-4-6')
+                ->withPrompt('Test')
+                ->withProviderOptions(['thinking' => $thinking])
+                ->toRequest();
+
+            expect(Text::buildHttpRequestPayload($request)['thinking'] ?? null)->toBe($expected);
+        })->with([
+            "Anthropic's enabled shape" => [['type' => 'enabled', 'budget_tokens' => 2048], ['type' => 'enabled', 'budget_tokens' => 2048]],
+            'adaptive with display' => [['type' => 'adaptive', 'display' => 'summarized'], ['type' => 'adaptive', 'display' => 'summarized']],
+            'disabled' => [['type' => 'disabled'], ['type' => 'disabled']],
+            "Prism's enabled shape is still translated" => [['enabled' => true, 'budgetTokens' => 2048], ['type' => 'enabled', 'budget_tokens' => 2048]],
+            "Prism's enabled shape without an integer budget" => [['enabled' => true, 'budgetTokens' => '4000'], ['type' => 'enabled', 'budget_tokens' => 1024]],
+            "Prism's spelling for off" => [['enabled' => false], null],
+            'an empty map' => [[], null],
+        ]);
+
+        it('lets withReasoning(false) win over any thinking shape', function (): void {
+            $request = Prism::text()
+                ->using('anthropic', 'claude-sonnet-4-6')
+                ->withPrompt('Test')
+                ->withProviderOptions(['thinking' => ['type' => 'enabled', 'budget_tokens' => 2048]])
+                ->withReasoning(false)
+                ->toRequest();
+
+            expect(Text::buildHttpRequestPayload($request))->not->toHaveKey('thinking');
+        });
+
+        it('keeps the thinking and signature Anthropic returns for a shape Prism does not spell', function (): void {
+            // Extraction used to be gated on Prism's own spellings, so the block
+            // came back and its signature was thrown away, and the next tool-use
+            // turn could not send it.
+            FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/text-with-extending-thinking');
+
+            $response = Prism::text()
+                ->using('anthropic', 'claude-sonnet-4-6')
+                ->withPrompt('What is the meaning of life, the universe and everything in popular fiction?')
+                ->withProviderOptions(['thinking' => ['type' => 'enabled', 'budget_tokens' => 2048]])
+                ->asText();
+
+            expect($response->additionalContent['thinking'] ?? null)->toContain('Douglas Adams')
+                ->and($response->additionalContent['thinking_signature'] ?? null)->not->toBeEmpty();
+        });
+    });
 });
 
 describe('exceptions', function (): void {

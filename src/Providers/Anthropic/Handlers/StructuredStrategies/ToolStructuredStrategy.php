@@ -7,12 +7,15 @@ namespace Prism\Prism\Providers\Anthropic\Handlers\StructuredStrategies;
 use Illuminate\Http\Client\Response as HttpResponse;
 use Prism\Prism\Enums\ToolChoice;
 use Prism\Prism\Exceptions\PrismException;
+use Prism\Prism\Providers\Anthropic\Concerns\ResolvesThinking;
 use Prism\Prism\Providers\Anthropic\Maps\ToolChoiceMap;
 use Prism\Prism\Structured\Response as PrismResponse;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 
 class ToolStructuredStrategy extends AnthropicStructuredStrategy
 {
+    use ResolvesThinking;
+
     public const STRUCTURED_OUTPUT_TOOL_NAME = 'output_structured_data';
 
     public function appendMessages(): void
@@ -94,9 +97,10 @@ class ToolStructuredStrategy extends AnthropicStructuredStrategy
      */
     protected function resolveToolChoice(): string|array|null
     {
-        // Thinking mode doesn't support tool_choice (Anthropic restriction)
-        if ($this->request->providerOptions('thinking.enabled') === true
-            || $this->request->providerOptions('thinking.type') === 'adaptive') {
+        // Thinking mode doesn't support tool_choice (Anthropic restriction).
+        // Any thinking shape counts, not only Prism's spellings: a thinking
+        // shape is sent as given, and forcing a tool beside it is a 400.
+        if (static::thinkingIsOn($this->request)) {
             return null;
         }
 
