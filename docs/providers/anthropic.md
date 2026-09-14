@@ -170,7 +170,7 @@ Works identically with `Prism::structured()`.
 ### Manual thinking (legacy)
 
 > [!WARNING]
-> Manual thinking with `enabled` and `budgetTokens` is deprecated on Claude 4.6+ models. Use adaptive thinking instead. Manual thinking is still required for older models (Sonnet 4.5, Opus 4.5, Sonnet 3.7, etc.).
+> Manual thinking with `enabled` and `budgetTokens` is deprecated on Opus 4.6 and Sonnet 4.6, and newer models (Opus 4.7 and later, Sonnet 5) refuse it with a 400. Use adaptive thinking on those. Manual thinking is still required for older models (Sonnet 4.5, Opus 4.5, Sonnet 3.7, etc.).
 
 ```php
 Prism::text()
@@ -180,7 +180,7 @@ Prism::text()
     ->asText();
 ```
 
-By default Prism will set the thinking budget to the value set in config, or where that isn't set, the minimum allowed (1024).
+By default Prism sets the thinking budget to `default_thinking_budget` from the Anthropic provider config (`ANTHROPIC_DEFAULT_THINKING_BUDGET`), or, where that isn't set, to the minimum allowed (1024).
 
 You can override the config (or its default) using `withProviderOptions`:
 

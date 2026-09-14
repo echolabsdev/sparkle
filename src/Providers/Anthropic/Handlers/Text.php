@@ -314,7 +314,7 @@ class Text
                 'type' => 'enabled',
                 'budget_tokens' => is_int($request->providerOptions('thinking.budgetTokens'))
                     ? $request->providerOptions('thinking.budgetTokens')
-                    : config('prism.anthropic.default_thinking_budget', 1024),
+                    : config('prism.providers.anthropic.default_thinking_budget', 1024),
             ];
         }
 

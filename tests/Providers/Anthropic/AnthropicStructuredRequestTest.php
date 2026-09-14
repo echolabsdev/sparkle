@@ -348,6 +348,23 @@ it('sends correct legacy thinking mode in payload', function (): void {
     });
 });
 
+it('takes the default thinking budget from the documented config key', function (): void {
+    config()->set('prism.providers.anthropic.default_thinking_budget', 3000);
+    FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
+
+    Prism::structured()
+        ->using(Provider::Anthropic, 'claude-3-5-haiku-latest')
+        ->withMessages([new UserMessage('Solve this math problem: 2+2')])
+        ->withSchema(new ObjectSchema('simple', 'Simple object', [new StringSchema('data', 'Some data')], ['data']))
+        ->withProviderOptions(['thinking' => ['enabled' => true]])
+        ->asStructured();
+
+    Http::assertSent(fn (Request $request): bool => $request->data()['thinking'] === [
+        'type' => 'enabled',
+        'budget_tokens' => 3000,
+    ]);
+});
+
 it('sends correct mcp_servers', function (): void {
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/structured');
 
