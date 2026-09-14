@@ -22,6 +22,8 @@ use Prism\Prism\Telemetry\Telemetry;
 use Prism\Prism\Telemetry\TelemetryContext;
 use Prism\Prism\Testing\TextResponseFake;
 use Prism\Prism\Testing\TextStepFake;
+use Prism\Prism\ValueObjects\Media\Image;
+use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\ProviderRateLimit;
 use Prism\Prism\ValueObjects\ToolCall;
@@ -430,4 +432,63 @@ it('tags tool events with the advancing step cursor so tools nest under their st
     // ending the generation clears its cursor
     Telemetry::end($context);
     expect(Telemetry::stack()->stepFor($context->traceId))->toBe(0);
+});
+
+describe('media inside captured streaming content', function (): void {
+    // capture_content was understood to export TEXT. A message's stored form
+    // carries each attachment's bytes, so without this a captured stream carried
+    // the user's uploaded file to every telemetry listener.
+
+    function capturedMessages(): array
+    {
+        Event::fake();
+
+        $request = new class
+        {
+            /** @return list<UserMessage> */
+            public function messages(): array
+            {
+                return [new UserMessage('What is in this?', [Image::fromRawContent('SECRET-FILE-BYTES', 'image/png')])];
+            }
+        };
+
+        $context = Telemetry::start(TelemetryOperation::Stream, 'openai', 'gpt-x');
+        $inner = (function (): Generator {
+            yield new TextDeltaEvent('d1', time(), 'seen', 'm1');
+            yield new StreamEndEvent('e1', time(), FinishReason::Stop, new Usage(1, 2));
+        })();
+
+        iterator_to_array(Telemetry::instrumentStream($context, $inner, $request), false);
+
+        $captured = null;
+        Event::assertDispatched(GenerationCompleted::class, function (GenerationCompleted $event) use (&$captured): bool {
+            $captured = $event->response?->toArray()['messages'] ?? null;
+
+            return true;
+        });
+
+        return $captured ?? [];
+    }
+
+    it('withholds the bytes by default, and records their size', function (): void {
+        config()->set('prism.telemetry.capture_content', true);
+
+        $image = capturedMessages()[0]['additional_content'][0];
+
+        expect($image['kind'])->toBe('image')
+            ->and($image['mime_type'])->toBe('image/png')
+            ->and($image['base64'])->toBeNull()
+            ->and($image['omitted_bytes'])->toBe(17)
+            ->and(json_encode(capturedMessages()))->not->toContain(base64_encode('SECRET-FILE-BYTES'));
+    });
+
+    it('keeps the bytes when capture_media is on', function (): void {
+        config()->set('prism.telemetry.capture_content', true);
+        config()->set('prism.telemetry.capture_media', true);
+
+        $image = capturedMessages()[0]['additional_content'][0];
+
+        expect($image['base64'])->toBe(base64_encode('SECRET-FILE-BYTES'))
+            ->and($image)->not->toHaveKey('omitted_bytes');
+    });
 });

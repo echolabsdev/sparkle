@@ -17,6 +17,11 @@ return [
         // telemetry sink is trusted.
         'capture_content' => env('PRISM_TELEMETRY_CAPTURE_CONTENT', false),
 
+        // Include attachment BYTES (images, documents, audio, video) in captured
+        // content. Off by default: with it off, a media part keeps its kind, mime
+        // type and file id, and its bytes are replaced by their size.
+        'capture_media' => env('PRISM_TELEMETRY_CAPTURE_MEDIA', false),
+
         // Bound opt-in stream reconstruction so telemetry cannot turn an
         // otherwise streaming response into unbounded process memory.
         'content_max_length' => (int) env('PRISM_TELEMETRY_CONTENT_MAX_LENGTH', 65_536),

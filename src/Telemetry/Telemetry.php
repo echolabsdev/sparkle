@@ -290,10 +290,19 @@ class Telemetry
             $truncated = true;
         }
 
+        $captureMedia = (bool) config('prism.telemetry.capture_media', false);
+
         return array_map(
-            fn (mixed $value): array => $value instanceof Arrayable
-                ? $value->toArray()
-                : (is_array($value) ? $value : ['type' => get_debug_type($value)]),
+            function (mixed $value) use ($captureMedia): array {
+                $array = $value instanceof Arrayable
+                    ? $value->toArray()
+                    : (is_array($value) ? $value : ['type' => get_debug_type($value)]);
+
+                // A message's stored form carries its attachments' bytes. See
+                // MediaContent for why content capture withholds them by default.
+                /** @var array<string, mixed> */
+                return $captureMedia ? $array : MediaContent::withoutBytes($array);
+            },
             array_slice($values, 0, $maxItems),
         );
     }

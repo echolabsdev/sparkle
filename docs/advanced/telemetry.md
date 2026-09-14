@@ -136,6 +136,26 @@ unbounded process memory:
 - `content_max_length` (default `65_536`) caps per-item text length.
 - `content_max_items` (default `256`) caps how many message items are captured.
 
+### Attachments
+
+Captured messages can hold images, documents, audio or video. **Their bytes are not
+captured by default.** A media part keeps its kind, mime type, file id and filename,
+and its `base64` is replaced by `omitted_bytes`, the size of what was left out:
+
+```json
+{"kind": "image", "url": null, "base64": null, "mime_type": "image/png", "file_id": null, "filename": null, "omitted_bytes": 48213}
+```
+
+To capture the bytes too, where your telemetry sink is trusted with your users'
+files:
+
+```env
+PRISM_TELEMETRY_CAPTURE_MEDIA=true
+```
+
+Only media Prism serialises is recognised. Bytes a user pastes into a prompt as text
+are text, and `capture_content` alone decides whether they are captured.
+
 ## Exporting to OpenTelemetry / Arize Phoenix
 
 Because the events above are provider-neutral, any exporter can consume them. The
