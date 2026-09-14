@@ -1352,6 +1352,36 @@ describe('the documented resume, through a real provider handler', function (): 
             ]);
     });
 
+    it('does not run an approved call again on the turn after it ran', function (): void {
+        // The approval stays in the conversation, so every later request
+        // passes it back through resolveToolApprovals. The call already has its
+        // result there, and must not run a second time.
+        $fixture = fn (int $n): string => (string) file_get_contents(__DIR__."/Fixtures/openai/generate-text-with-multiple-tools-{$n}.json");
+        Http::fakeSequence()->push($fixture(1))->push($fixture(2))->push($fixture(2));
+        $ran = ['weather' => 0, 'search' => 0];
+        // Not an arrow function: it would capture $ran by value, and the tools
+        // would count into a copy.
+        $pending = function () use (&$ran) {
+            return Prism::text()->using('openai', 'gpt-4o')->withTools(approvalTools($ran))->withMaxSteps(3);
+        };
+
+        $response = $pending()->withPrompt('What time is the tigers game today and should I wear a coat?')->asText();
+        $request = $response->steps->last()->toolApprovalRequests[0];
+
+        $resumed = $pending()
+            ->withMessages([...$response->messages, new ToolResultMessage([], [new ToolApprovalResponse($request->approvalId, true)])])
+            ->asText();
+
+        $pending()->withMessages([...$resumed->messages, new UserMessage('Thanks')])->asText();
+
+        $lastInput = collect(json_decode((string) Http::recorded()[2][0]->body(), true)['input']);
+
+        expect($ran)->toBe(['weather' => 1, 'search' => 1])
+            ->and($lastInput->where('type', 'function_call_output'))->toHaveCount(2)
+            // Results stay where they were, before the new turn, not after it.
+            ->and($lastInput->last()['role'] ?? null)->toBe('user');
+    });
+
     it('keeps the results of a run that stopped at its step budget', function (): void {
         // The same omission without any approval: withMaxSteps(1) runs the
         // tools and stops, and a conversation continued from $response->messages

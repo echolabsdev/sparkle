@@ -292,14 +292,19 @@ trait CallsTools
         $approvalResolvedToolResults = [];
 
         foreach ($assistantMessage->toolCalls as $toolCall) {
+            // A call that already has a result is DONE, approved or not. This
+            // check used to run only for calls with no decision, so a call
+            // approved on an earlier request ran again on every later request
+            // whose history still carried the approval: a transfer approved
+            // once executed once per turn after it.
+            if (collect($toolMessage->toolResults)->contains(fn (ToolResult $toolResult): bool => $toolResult->toolCallId === $toolCall->id)) {
+                continue;
+            }
+
             $approvalId = $toolCallIdToApprovalId[$toolCall->id] ?? null;
             $approval = $approvalId !== null ? $toolMessage->findByApprovalId($approvalId) : null;
 
             if (! $approval instanceof ToolApprovalResponse) {
-                if (collect($toolMessage->toolResults)->contains(fn (ToolResult $toolResult): bool => $toolResult->toolCallId === $toolCall->id)) {
-                    continue; // already executed
-                }
-
                 if ($toolsByName->get($toolCall->name)?->hasApprovalConfigured() !== true) {
                     continue;
                 }
