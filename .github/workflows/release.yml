@@ -26,6 +26,8 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # Run again when the tag lands, not only when the commit did: a dependency
       # that has since gone unmaintained, or an approval since withdrawn, fails
