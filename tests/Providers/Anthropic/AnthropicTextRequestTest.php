@@ -348,11 +348,11 @@ it('sends correct legacy thinking mode with default budget tokens', function ():
     });
 });
 
-it('takes the default thinking budget from the documented config key', function (): void {
+it('takes the default thinking budget from the documented config key', function (int|string $configured): void {
     // The config file and docs put it at prism.providers.anthropic, and the
     // handlers read prism.anthropic, so ANTHROPIC_DEFAULT_THINKING_BUDGET was
     // ignored and every request got 1024.
-    config()->set('prism.providers.anthropic.default_thinking_budget', 3000);
+    config()->set('prism.providers.anthropic.default_thinking_budget', $configured);
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/generate-text-with-a-prompt');
 
     Prism::text()
@@ -365,7 +365,11 @@ it('takes the default thinking budget from the documented config key', function 
         'type' => 'enabled',
         'budget_tokens' => 3000,
     ]);
-});
+})->with([
+    'as an integer' => [3000],
+    // What env() returns for ANTHROPIC_DEFAULT_THINKING_BUDGET=3000.
+    'as a string from the environment' => ['3000'],
+]);
 
 it('omits null values from payload', function (): void {
     FixtureResponse::fakeResponseSequence('v1/messages', 'anthropic/generate-text-with-a-prompt');

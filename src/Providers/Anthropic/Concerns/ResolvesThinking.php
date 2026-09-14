@@ -52,9 +52,11 @@ trait ResolvesThinking
         if (($thinking['enabled'] ?? null) === true) {
             return [
                 'type' => 'enabled',
+                // Cast: ANTHROPIC_DEFAULT_THINKING_BUDGET arrives from the
+                // environment as a string, and budget_tokens is an integer.
                 'budget_tokens' => is_int($thinking['budgetTokens'] ?? null)
                     ? $thinking['budgetTokens']
-                    : config('prism.providers.anthropic.default_thinking_budget', 1024),
+                    : (int) config('prism.providers.anthropic.default_thinking_budget', 1024),
             ];
         }
 
