@@ -60,3 +60,31 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest --parallel
+
+  third-party:
+    name: Third-party dependency allowlist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # This job only reads files, so it keeps no token in .git/config for
+      # the fetched checker to find.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Every direct dependency must be approved on the org allowlist and still
+      # maintained. The list is fetched, never vendored, so there is no copy here
+      # to drift. The release guard requires this workflow to have succeeded for
+      # the tagged commit, so a failure here also stops a publish.
+      - name: Fetch the third-party allowlist
+        uses: actions/checkout@v4
+        with:
+          repository: Particle-Academy/.github
+          path: .third-party-allowlist
+          persist-credentials: false
+
+      - name: Third-party dependency allowlist
+        run: |
+          node .third-party-allowlist/third-party/check.mjs --repo .
+          node -e "require('node:fs').rmSync('.third-party-allowlist',{recursive:true,force:true})"
