@@ -127,7 +127,7 @@ describe('Speech-to-Text for Replicate', function (): void {
             ->and($sent)->not->toContain(base64_encode($marker))
             // The positive control: the path string itself did go out, so this
             // is not passing because no request was made at all.
-            ->and($sent)->toContain(json_encode($path) === false ? $path : trim((string) json_encode($path), '"'));
+            ->and($sent)->toContain(json_encode($path) === false ? $path : trim(json_encode($path), '"'));
     });
 
     it('still transcribes a local file through fromLocalPath', function (): void {
